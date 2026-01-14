@@ -1,0 +1,238 @@
+// Prisma Schema for Astrologer Studio Application
+// Database: PostgreSQL
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// User account with authentication credentials
+/// Owns subjects (birth charts) and chart preferences
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String? // Hashed with bcrypt - optional for OAuth users
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Profile
+  email     String? @unique
+  firstName String?
+  lastName  String?
+  emailVerified DateTime? // When the email was verified
+
+  // OAuth
+  googleId     String? @unique // Google OAuth sub claim
+  authProvider String  @default("credentials") // credentials | google
+
+  // Subscription
+  onboardingCompleted  Boolean   @default(false) // Has user selected a plan after signup?
+  subscriptionPlan     String    @default("free") // free, trial, pro, lifetime
+  subscriptionId       String?
+  customerId           String?
+  subscriptionEndsAt   DateTime? // When current period ends
+  trialEndsAt          DateTime? // Trial expiration
+  lastSubscriptionSync DateTime? // Last time subscription was verified
+  aiGenerationsTotal   Int       @default(0) // Lifetime AI interpretation count
+
+  // Relations
+  subjects         Subject[]
+  chartPreferences ChartPreferences?
+  savedCharts      SavedChart[]
+
+  // Legal acceptance tracking
+  termsAcceptedVersion   String?   // Version of terms accepted (e.g., "2026-01-14")
+  termsAcceptedAt        DateTime?
+  privacyAcceptedVersion String?   // Version of privacy policy accepted
+  privacyAcceptedAt      DateTime?
+
+  // Usage analytics
+  lastLoginAt  DateTime?
+  loginCount   Int       @default(0)
+  lastActiveAt DateTime?
+
+  @@index([username])
+  @@index([customerId])
+}
+
+/// Subject represents a person for whom charts can be generated
+/// Contains birth data and location information for astrological calculations
+model Subject {
+  id            String   @id @default(uuid())
+  name          String
+  birthDatetime DateTime // Full birth date and time in ISO format
+
+  // Location data for accurate chart calculation
+  city      String?
+  nation    String?
+  latitude  Float?
+  longitude Float?
+  timezone  String?
+
+  // Metadata
+  rodensRating String? // Data accuracy rating (AA, A, B, C, DD, etc.)
+  tags         String? // JSON array stored as string: ["family", "celebrity"]
+  notes        String? // Free text notes about the subject
+
+  // Ownership
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([name])
+}
+
+/// User preferences for chart rendering and calculation
+/// Stores customized options for visual themes and computational methods
+model ChartPreferences {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Visual rendering options
+  theme                 String? @default("classic") // classic | dark | light | strawberry | etc.
+
+  date_format           String? @default("EU") // US | EU | ISO
+  time_format           String? @default("24h") // 12h | 24h
+  show_aspect_icons     Boolean? @default(true) // Show aspect icons on aspect lines
+  show_degree_indicators Boolean? @default(true) // Show degree numbers on chart
+  // Computational preferences
+  distribution_method   String? @default("weighted") // weighted | pure_count
+  default_zodiac_system String? @default("Tropical") // Tropical | Sidereal
+  default_sidereal_mode String? // LAHIRI, FAGAN_BRADLEY, etc.
+  house_system          String? @default("Placidus")
+  perspective_type      String? @default("Geocentric")
+  rulership_mode        String? @default("modern") // classical | modern
+
+  // JSON-serialized arrays for complex configurations
+  active_points               String? // JSON: string[] - Which celestial points to include
+  active_aspects              String? // JSON: AspectConfig[] - Aspect configuration
+  custom_distribution_weights String? // JSON: Record<string, number> - Custom weights for distribution
+
+  // Additional rendering options
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+/// Saved Chart with interpretation
+model SavedChart {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  type      String // natal, transit, synastry, etc.
+  chartData String // JSON string
+  settings  String? // JSON string
+  notes     String? // Editable notes
+  tags      String? // JSON array: ["personal", "important", etc.]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([type])
+}
+
+/// Cached AI Interpretation
+model CachedInterpretation {
+  id        String   @id @default(cuid())
+  hash      String
+  userId    String?  // User scoping to prevent cross-tenant leakage (optional for backward compatibility)
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([hash, userId])
+  @@index([userId])
+  @@index([hash])
+}
+
+/// Track daily AI usage per user
+model UserAIUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String // YYYY-MM-DD
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+/// Verification tokens for password reset and email change
+model VerificationToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  type      String    // "password_reset" | "email_change"
+  userId    String
+  payload   String?   // For email_change: stores the new email
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+  @@index([userId, type])
+}
+
+// ============================================================================
+// ADMIN SYSTEM MODELS
+// Completely separate from regular users for security isolation
+// ============================================================================
+
+/// Admin user account - completely separate from regular users
+model AdminUser {
+  id          String    @id @default(uuid())
+  username    String    @unique
+  password    String    // bcrypt hashed
+  email       String?   @unique
+  role        String    @default("admin") // admin | superadmin
+  lastLoginAt DateTime?
+  lastLoginIp String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sessions  AdminSession[]
+  auditLogs AdminAuditLog[]
+
+  @@index([username])
+}
+
+/// Admin session tracking for security auditing
+model AdminSession {
+  id        String    @id @default(uuid())
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  ipAddress String
+  userAgent String?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  @@index([adminId])
+}
+
+/// Audit log for admin actions
+model AdminAuditLog {
+  id        String    @id @default(uuid())
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id])
+  action    String    // login, logout, view_users, delete_user, etc.
+  details   String?   // JSON with additional context
+  ipAddress String
+  createdAt DateTime  @default(now())
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+}
