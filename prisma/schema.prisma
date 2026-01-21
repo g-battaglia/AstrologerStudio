@@ -38,7 +38,7 @@ model User {
   trialEndsAt          DateTime? // Trial expiration
   lastSubscriptionSync DateTime? // Last time subscription was verified
   aiGenerationsTotal   Int       @default(0) // Lifetime AI interpretation count
-  
+
   // Trial notification tracking
   // When null for existing user: hasn't been offered the bonus trial yet
   // When set to a date: the bonus trial has been activated on that date
@@ -175,6 +175,21 @@ model UserAIUsage {
 
   @@unique([userId, date])
   @@index([userId])
+}
+
+model ChartCalculationUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // YYYY-MM-DD
+  chartType String   // natal, transit, synastry, composite, solar-return, lunar-return, now
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date, chartType])
+  @@index([userId])
+  @@index([chartType])
+  @@index([date])
 }
 
 /// Verification tokens for password reset and email change

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, BarChart3, Settings, Shield } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, Settings, Shield, Calculator } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface AdminSidebarProps {
@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'AI Usage', href: '/admin/usage', icon: BarChart3 },
+  { name: 'Calculations', href: '/admin/calculations', icon: Calculator },
 ]
 
 const superadminNavigation = [{ name: 'Admin Users', href: '/admin/settings', icon: Settings }]

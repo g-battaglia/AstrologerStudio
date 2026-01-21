@@ -116,6 +116,34 @@ export type DashboardStats = {
   totalAIGenerations: number
   aiGenerationsToday: number
   usersByPlan: { plan: string; count: number }[]
+
+  // Engagement metrics
+  activeUsersToday: number
+  activeUsersThisWeek: number
+  activeUsersThisMonth: number
+
+  // Retention metrics
+  retentionRate7d: number
+  avgLoginsPerUser: number
+
+  // Feature adoption
+  usersWithSubjects: number
+  usersWithSavedCharts: number
+  usersWithAIUsage: number
+  inactiveUsers30d: number
+
+  // Chart breakdown (saved charts)
+  savedChartsByType: { type: string; count: number }[]
+
+  // Chart calculation stats
+  totalCalculations: number
+  calculationsToday: number
+  calculationsThisWeek: number
+  calculationsThisMonth: number
+  calculationsByType: { type: string; count: number }[]
+  calculationsTodayByType: { type: string; count: number }[]
+  calculationsByTypeThisWeek: { type: string; count: number }[]
+  calculationsByTypeThisMonth: { type: string; count: number }[]
 }
 
 /**
@@ -124,12 +152,52 @@ export type DashboardStats = {
 export async function getDashboardStats(): Promise<ActionResult<DashboardStats>> {
   return withAdminAuth(async (session) => {
     const now = new Date()
+    const today = now.toISOString().split('T')[0]!
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const startOfWeek = new Date(startOfDay)
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    const [totalUsers, usersToday, usersThisWeek, usersThisMonth, usersByPlan, aiUsageToday] = await Promise.all([
+    // Additional date boundaries for engagement metrics
+    const sevenDaysAgo = new Date(startOfDay)
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const thirtyDaysAgo = new Date(startOfDay)
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const [
+      // Basic user stats
+      totalUsers,
+      usersToday,
+      usersThisWeek,
+      usersThisMonth,
+      usersByPlan,
+      aiUsageToday,
+      // Active users (by lastActiveAt)
+      activeUsersToday,
+      activeUsersThisWeek,
+      activeUsersThisMonth,
+      // Feature adoption
+      usersWithSubjects,
+      usersWithSavedCharts,
+      usersWithAIUsage,
+      // Inactive users
+      inactiveUsers30d,
+      // Saved charts by type
+      savedChartsByType,
+      // Retention calculation - users eligible (created >7 days ago)
+      eligibleForRetention,
+      // Retention calculation - users who returned
+      returnedUsers,
+      // Average logins per user
+      avgLogins,
+      // Chart calculations stats
+      calculationsByTypeRaw,
+      calculationsTodayByTypeRaw,
+      calculationsThisWeekByTypeRaw,
+      calculationsThisMonthByTypeRaw,
+      totalCalcsResult,
+    ] = await Promise.all([
+      // Basic stats
       prisma.user.count(),
       prisma.user.count({ where: { createdAt: { gte: startOfDay } } }),
       prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
@@ -139,7 +207,100 @@ export async function getDashboardStats(): Promise<ActionResult<DashboardStats>>
         _count: true,
       }),
       prisma.userAIUsage.aggregate({
-        where: { date: now.toISOString().split('T')[0] },
+        where: { date: today },
+        _sum: { count: true },
+      }),
+
+      // Active users today
+      prisma.user.count({
+        where: { lastActiveAt: { gte: startOfDay } },
+      }),
+
+      // Active users this week
+      prisma.user.count({
+        where: { lastActiveAt: { gte: sevenDaysAgo } },
+      }),
+
+      // Active users this month
+      prisma.user.count({
+        where: { lastActiveAt: { gte: thirtyDaysAgo } },
+      }),
+
+      // Users with at least 1 subject
+      prisma.user.count({
+        where: { subjects: { some: {} } },
+      }),
+
+      // Users with at least 1 saved chart
+      prisma.user.count({
+        where: { savedCharts: { some: {} } },
+      }),
+
+      // Users who used AI at least once
+      prisma.user.count({
+        where: { aiGenerationsTotal: { gt: 0 } },
+      }),
+
+      // Inactive users (no activity in 30+ days)
+      prisma.user.count({
+        where: {
+          OR: [{ lastActiveAt: { lt: thirtyDaysAgo } }, { lastActiveAt: null }],
+        },
+      }),
+
+      // Saved charts grouped by type
+      prisma.savedChart.groupBy({
+        by: ['type'],
+        _count: true,
+      }),
+
+      // For retention: users created more than 7 days ago
+      prisma.user.count({
+        where: { createdAt: { lt: sevenDaysAgo } },
+      }),
+
+      // For retention: users created >7 days ago AND active in last 7 days
+      prisma.user.count({
+        where: {
+          createdAt: { lt: sevenDaysAgo },
+          lastActiveAt: { gte: sevenDaysAgo },
+        },
+      }),
+
+      // Average logins per user
+      prisma.user.aggregate({
+        _avg: { loginCount: true },
+      }),
+
+      // Chart calculations by type (all time)
+      prisma.chartCalculationUsage.groupBy({
+        by: ['chartType'],
+        _sum: { count: true },
+      }),
+
+      // Chart calculations today by type
+      prisma.chartCalculationUsage.groupBy({
+        by: ['chartType'],
+        where: { date: today },
+        _sum: { count: true },
+      }),
+
+      // Chart calculations this week by type
+      prisma.chartCalculationUsage.groupBy({
+        by: ['chartType'],
+        where: { date: { gte: sevenDaysAgo.toISOString().split('T')[0]! } },
+        _sum: { count: true },
+      }),
+
+      // Chart calculations this month by type
+      prisma.chartCalculationUsage.groupBy({
+        by: ['chartType'],
+        where: { date: { gte: thirtyDaysAgo.toISOString().split('T')[0]! } },
+        _sum: { count: true },
+      }),
+
+      // Total calculations all time
+      prisma.chartCalculationUsage.aggregate({
         _sum: { count: true },
       }),
     ])
@@ -148,6 +309,14 @@ export async function getDashboardStats(): Promise<ActionResult<DashboardStats>>
     const totalAIGenerationsResult = await prisma.user.aggregate({
       _sum: { aiGenerationsTotal: true },
     })
+
+    // Calculate retention rate
+    const retentionRate7d = eligibleForRetention > 0 ? Math.round((returnedUsers / eligibleForRetention) * 100) : 0
+
+    // Calculate calculations today total
+    const calculationsToday = calculationsTodayByTypeRaw.reduce((sum, c) => sum + (c._sum.count || 0), 0)
+    const calculationsThisWeek = calculationsThisWeekByTypeRaw.reduce((sum, c) => sum + (c._sum.count || 0), 0)
+    const calculationsThisMonth = calculationsThisMonthByTypeRaw.reduce((sum, c) => sum + (c._sum.count || 0), 0)
 
     // Log this action
     const ipAddress = await getClientIp()
@@ -172,6 +341,49 @@ export async function getDashboardStats(): Promise<ActionResult<DashboardStats>>
           plan: p.subscriptionPlan,
           count: p._count,
         })),
+
+        // Engagement metrics
+        activeUsersToday,
+        activeUsersThisWeek,
+        activeUsersThisMonth,
+
+        // Retention
+        retentionRate7d,
+        avgLoginsPerUser: Math.round((avgLogins._avg.loginCount || 0) * 10) / 10,
+
+        // Feature usage
+        usersWithSubjects,
+        usersWithSavedCharts,
+        usersWithAIUsage,
+        inactiveUsers30d,
+
+        // Chart breakdown (saved)
+        savedChartsByType: savedChartsByType.map((c) => ({
+          type: c.type,
+          count: c._count,
+        })),
+
+        // Chart calculation stats
+        totalCalculations: totalCalcsResult._sum.count || 0,
+        calculationsToday,
+        calculationsThisWeek,
+        calculationsThisMonth,
+        calculationsByType: calculationsByTypeRaw.map((c) => ({
+          type: c.chartType,
+          count: c._sum.count || 0,
+        })),
+        calculationsTodayByType: calculationsTodayByTypeRaw.map((c) => ({
+          type: c.chartType,
+          count: c._sum.count || 0,
+        })),
+        calculationsByTypeThisWeek: calculationsThisWeekByTypeRaw.map((c) => ({
+          type: c.chartType,
+          count: c._sum.count || 0,
+        })),
+        calculationsByTypeThisMonth: calculationsThisMonthByTypeRaw.map((c) => ({
+          type: c.chartType,
+          count: c._sum.count || 0,
+        })),
       },
     }
   })
@@ -193,6 +405,7 @@ export type UserListItem = {
   lastActiveAt: Date | null
   subjectsCount: number
   savedChartsCount: number
+  calculationsTotal: number
 }
 
 export type UsersListResult = {
@@ -210,7 +423,7 @@ export async function getUsers(
   pageSize: number = 20,
   search?: string,
   planFilter?: string,
-  sortBy: 'createdAt' | 'lastLoginAt' = 'createdAt',
+  sortBy: 'createdAt' | 'lastLoginAt' | 'lastActiveAt' = 'createdAt',
   sortOrder: 'asc' | 'desc' = 'desc',
 ): Promise<ActionResult<UsersListResult>> {
   return withAdminAuth(async (session) => {
@@ -266,6 +479,15 @@ export async function getUsers(
       },
     })
 
+    // Get calculation counts for these users
+    const userIds = users.map((u) => u.id)
+    const calculationCounts = await prisma.chartCalculationUsage.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds } },
+      _sum: { count: true },
+    })
+    const calcCountMap = new Map(calculationCounts.map((c) => [c.userId, c._sum.count || 0]))
+
     return {
       success: true,
       data: {
@@ -281,6 +503,7 @@ export async function getUsers(
           lastActiveAt: u.lastActiveAt,
           subjectsCount: u._count.subjects,
           savedChartsCount: u._count.savedCharts,
+          calculationsTotal: calcCountMap.get(u.id) || 0,
         })),
         total,
         page,
@@ -559,5 +782,405 @@ export async function createAdminUser(
     })
 
     return { success: true, data: { id: admin.id } }
+  })
+}
+
+// ============================================================================
+// Calculation Usage Management
+// ============================================================================
+
+export type ClearHistoryTimeRange = 'day' | 'week' | 'month' | 'all'
+
+export type CalculationUsageByPeriod = {
+  today: number
+  thisWeek: number
+  thisMonth: number
+  allTime: number
+  byTypeToday: { type: string; count: number }[]
+  byTypeThisWeek: { type: string; count: number }[]
+  byTypeThisMonth: { type: string; count: number }[]
+}
+
+/**
+ * Get calculation usage broken down by time period
+ */
+export async function getCalculationUsageByPeriod(): Promise<ActionResult<CalculationUsageByPeriod>> {
+  return withAdminAuth(async () => {
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]!
+
+    // Calculate date boundaries
+    const sevenDaysAgo = new Date(now)
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const weekStart = sevenDaysAgo.toISOString().split('T')[0]!
+
+    const thirtyDaysAgo = new Date(now)
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const monthStart = thirtyDaysAgo.toISOString().split('T')[0]!
+
+    const [todayTotal, weekTotal, monthTotal, allTimeTotal, byTypeToday, byTypeThisWeek, byTypeThisMonth] =
+      await Promise.all([
+        // Today total
+        prisma.chartCalculationUsage.aggregate({
+          where: { date: today },
+          _sum: { count: true },
+        }),
+        // This week total
+        prisma.chartCalculationUsage.aggregate({
+          where: { date: { gte: weekStart } },
+          _sum: { count: true },
+        }),
+        // This month total
+        prisma.chartCalculationUsage.aggregate({
+          where: { date: { gte: monthStart } },
+          _sum: { count: true },
+        }),
+        // All time total
+        prisma.chartCalculationUsage.aggregate({
+          _sum: { count: true },
+        }),
+        // By type today
+        prisma.chartCalculationUsage.groupBy({
+          by: ['chartType'],
+          where: { date: today },
+          _sum: { count: true },
+        }),
+        // By type this week
+        prisma.chartCalculationUsage.groupBy({
+          by: ['chartType'],
+          where: { date: { gte: weekStart } },
+          _sum: { count: true },
+        }),
+        // By type this month
+        prisma.chartCalculationUsage.groupBy({
+          by: ['chartType'],
+          where: { date: { gte: monthStart } },
+          _sum: { count: true },
+        }),
+      ])
+
+    return {
+      success: true,
+      data: {
+        today: todayTotal._sum.count || 0,
+        thisWeek: weekTotal._sum.count || 0,
+        thisMonth: monthTotal._sum.count || 0,
+        allTime: allTimeTotal._sum.count || 0,
+        byTypeToday: byTypeToday.map((c) => ({ type: c.chartType, count: c._sum.count || 0 })),
+        byTypeThisWeek: byTypeThisWeek.map((c) => ({ type: c.chartType, count: c._sum.count || 0 })),
+        byTypeThisMonth: byTypeThisMonth.map((c) => ({ type: c.chartType, count: c._sum.count || 0 })),
+      },
+    }
+  })
+}
+
+export type TopUserByCalculations = {
+  userId: string
+  username: string
+  email: string | null
+  subscriptionPlan: string
+  calculationsTotal: number
+  calculationsToday: number
+  calculationsThisWeek: number
+  calculationsThisMonth: number
+}
+
+/**
+ * Get top users ranked by calculation usage
+ */
+export async function getTopUsersByCalculations(limit: number = 20): Promise<ActionResult<TopUserByCalculations[]>> {
+  return withAdminAuth(async () => {
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]!
+
+    const sevenDaysAgo = new Date(now)
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const weekStart = sevenDaysAgo.toISOString().split('T')[0]!
+
+    const thirtyDaysAgo = new Date(now)
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const monthStart = thirtyDaysAgo.toISOString().split('T')[0]!
+
+    // Get all-time totals by user
+    const allTimeTotals = await prisma.chartCalculationUsage.groupBy({
+      by: ['userId'],
+      _sum: { count: true },
+      orderBy: { _sum: { count: 'desc' } },
+      take: limit,
+    })
+
+    if (allTimeTotals.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    const userIds = allTimeTotals.map((t) => t.userId)
+
+    // Get users info
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true, email: true, subscriptionPlan: true },
+    })
+    const usersMap = new Map(users.map((u) => [u.id, u]))
+
+    // Get today's counts
+    const todayCounts = await prisma.chartCalculationUsage.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds }, date: today },
+      _sum: { count: true },
+    })
+    const todayMap = new Map(todayCounts.map((c) => [c.userId, c._sum.count || 0]))
+
+    // Get week counts
+    const weekCounts = await prisma.chartCalculationUsage.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds }, date: { gte: weekStart } },
+      _sum: { count: true },
+    })
+    const weekMap = new Map(weekCounts.map((c) => [c.userId, c._sum.count || 0]))
+
+    // Get month counts
+    const monthCounts = await prisma.chartCalculationUsage.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds }, date: { gte: monthStart } },
+      _sum: { count: true },
+    })
+    const monthMap = new Map(monthCounts.map((c) => [c.userId, c._sum.count || 0]))
+
+    const result: TopUserByCalculations[] = allTimeTotals
+      .map((t) => {
+        const user = usersMap.get(t.userId)
+        if (!user) return null
+        return {
+          userId: t.userId,
+          username: user.username,
+          email: user.email,
+          subscriptionPlan: user.subscriptionPlan,
+          calculationsTotal: t._sum.count || 0,
+          calculationsToday: todayMap.get(t.userId) || 0,
+          calculationsThisWeek: weekMap.get(t.userId) || 0,
+          calculationsThisMonth: monthMap.get(t.userId) || 0,
+        }
+      })
+      .filter((r): r is TopUserByCalculations => r !== null)
+
+    return { success: true, data: result }
+  })
+}
+
+/**
+ * Clear calculation usage history by time range (superadmin only)
+ */
+export async function clearCalculationHistory(
+  timeRange: ClearHistoryTimeRange,
+): Promise<ActionResult<{ deletedCount: number }>> {
+  return withSuperAdminAuth(async (session) => {
+    const now = new Date()
+    let deletedCount = 0
+    let dateFilter: string | undefined
+
+    switch (timeRange) {
+      case 'day': {
+        // Delete only today's records
+        const today = now.toISOString().split('T')[0]!
+        const result = await prisma.chartCalculationUsage.deleteMany({
+          where: { date: today },
+        })
+        deletedCount = result.count
+        dateFilter = today
+        break
+      }
+      case 'week': {
+        // Delete last 7 days
+        const sevenDaysAgo = new Date(now)
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+        const weekStart = sevenDaysAgo.toISOString().split('T')[0]!
+        const result = await prisma.chartCalculationUsage.deleteMany({
+          where: { date: { gte: weekStart } },
+        })
+        deletedCount = result.count
+        dateFilter = `>= ${weekStart}`
+        break
+      }
+      case 'month': {
+        // Delete last 30 days
+        const thirtyDaysAgo = new Date(now)
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        const monthStart = thirtyDaysAgo.toISOString().split('T')[0]!
+        const result = await prisma.chartCalculationUsage.deleteMany({
+          where: { date: { gte: monthStart } },
+        })
+        deletedCount = result.count
+        dateFilter = `>= ${monthStart}`
+        break
+      }
+      case 'all': {
+        // Delete all records
+        const result = await prisma.chartCalculationUsage.deleteMany({})
+        deletedCount = result.count
+        dateFilter = 'all'
+        break
+      }
+    }
+
+    // Log this action
+    const ipAddress = await getClientIp()
+    await prisma.adminAuditLog.create({
+      data: {
+        adminId: session.adminId,
+        action: 'clear_calculation_history',
+        details: JSON.stringify({ timeRange, dateFilter, deletedCount }),
+        ipAddress,
+      },
+    })
+
+    return { success: true, data: { deletedCount } }
+  })
+}
+
+/**
+ * Search users for autocomplete
+ */
+export async function searchUsers(
+  query: string,
+): Promise<ActionResult<{ id: string; username: string; email: string | null }[]>> {
+  return withAdminAuth(async () => {
+    if (!query || query.length < 2) {
+      return { success: true, data: [] }
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { username: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+      },
+      take: 20,
+    })
+
+    return { success: true, data: users }
+  })
+}
+
+export type CalculationStatsResult = {
+  totalCalculations: number
+  calculationsToday: number
+  calculationsThisWeek: number
+  calculationsThisMonth: number
+  calculationsByType: { type: string; count: number }[]
+  calculationsTodayByType: { type: string; count: number }[]
+  calculationsByTypeThisWeek: { type: string; count: number }[]
+  calculationsByTypeThisMonth: { type: string; count: number }[]
+}
+
+/**
+ * Get detailed calculation stats, optionally filtered by user
+ */
+export async function getCalculationStats(userId?: string): Promise<ActionResult<CalculationStatsResult>> {
+  return withAdminAuth(async () => {
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]!
+
+    const sevenDaysAgo = new Date(now)
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const weekStart = sevenDaysAgo.toISOString().split('T')[0]!
+
+    const thirtyDaysAgo = new Date(now)
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const monthStart = thirtyDaysAgo.toISOString().split('T')[0]!
+
+    // Base where clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {}
+    if (userId) {
+      where.userId = userId
+    }
+
+    const [
+      totalCalculations,
+      calculationsToday,
+      calculationsThisWeek,
+      calculationsThisMonth,
+      calculationsByTypeRaw,
+      calculationsTodayByTypeRaw,
+      calculationsThisWeekByTypeRaw,
+      calculationsThisMonthByTypeRaw,
+    ] = await Promise.all([
+      // Total
+      prisma.chartCalculationUsage.aggregate({
+        where,
+        _sum: { count: true },
+      }),
+      // Today
+      prisma.chartCalculationUsage.aggregate({
+        where: { ...where, date: today },
+        _sum: { count: true },
+      }),
+      // This week
+      prisma.chartCalculationUsage.aggregate({
+        where: { ...where, date: { gte: weekStart } },
+        _sum: { count: true },
+      }),
+      // This month
+      prisma.chartCalculationUsage.aggregate({
+        where: { ...where, date: { gte: monthStart } },
+        _sum: { count: true },
+      }),
+      // By type (all time)
+      prisma.chartCalculationUsage.groupBy({
+        by: ['chartType'],
+        where,
+        _sum: { count: true },
+      }),
+      // By type (today)
+      prisma.chartCalculationUsage.groupBy({
+        by: ['chartType'],
+        where: { ...where, date: today },
+        _sum: { count: true },
+      }),
+      // By type (week)
+      prisma.chartCalculationUsage.groupBy({
+        by: ['chartType'],
+        where: { ...where, date: { gte: weekStart } },
+        _sum: { count: true },
+      }),
+      // By type (month)
+      prisma.chartCalculationUsage.groupBy({
+        by: ['chartType'],
+        where: { ...where, date: { gte: monthStart } },
+        _sum: { count: true },
+      }),
+    ])
+
+    return {
+      success: true,
+      data: {
+        totalCalculations: totalCalculations._sum.count || 0,
+        calculationsToday: calculationsToday._sum.count || 0,
+        calculationsThisWeek: calculationsThisWeek._sum.count || 0,
+        calculationsThisMonth: calculationsThisMonth._sum.count || 0,
+        calculationsByType: calculationsByTypeRaw.map((c) => ({
+          type: c.chartType,
+          count: c._sum.count || 0,
+        })),
+        calculationsTodayByType: calculationsTodayByTypeRaw.map((c) => ({
+          type: c.chartType,
+          count: c._sum.count || 0,
+        })),
+        calculationsByTypeThisWeek: calculationsThisWeekByTypeRaw.map((c) => ({
+          type: c.chartType,
+          count: c._sum.count || 0,
+        })),
+        calculationsByTypeThisMonth: calculationsThisMonthByTypeRaw.map((c) => ({
+          type: c.chartType,
+          count: c._sum.count || 0,
+        })),
+      },
+    }
   })
 }

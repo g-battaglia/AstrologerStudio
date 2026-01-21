@@ -1,5 +1,11 @@
 import 'server-only'
 import { getSession } from '@/lib/security/session'
+import { prisma } from '@/lib/db/prisma'
+
+// In-memory cache to throttle lastActiveAt updates (5 min = 300000ms)
+// This prevents excessive database writes while still tracking user activity
+const ACTIVITY_UPDATE_THROTTLE_MS = 5 * 60 * 1000
+const lastActivityUpdateCache = new Map<string, number>()
 
 /**
  * Session data returned by authentication wrapper
@@ -63,6 +69,22 @@ export async function withAuth<T>(fn: (session: AuthSession) => Promise<T>): Pro
 
   if (!session) {
     throw new UnauthorizedError()
+  }
+
+  // Update lastActiveAt in background (throttled to avoid DB spam)
+  const now = Date.now()
+  const lastUpdate = lastActivityUpdateCache.get(session.userId) || 0
+  if (now - lastUpdate > ACTIVITY_UPDATE_THROTTLE_MS) {
+    lastActivityUpdateCache.set(session.userId, now)
+    // Fire-and-forget update (don't await to avoid blocking the request)
+    prisma.user
+      .update({
+        where: { id: session.userId },
+        data: { lastActiveAt: new Date() },
+      })
+      .catch(() => {
+        // Silent fail - activity tracking shouldn't break functionality
+      })
   }
 
   return fn({

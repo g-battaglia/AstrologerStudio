@@ -1,13 +1,20 @@
 import { getDashboardStats } from '@/actions/admin'
-import { StatsCards } from '@/components/admin/StatsCards'
-import { UsersByPlanChart } from '@/components/admin/UsersByPlanChart'
+import { DashboardContent } from '@/components/admin/DashboardContent'
+import { getAdminSession } from '@/lib/security/admin-session'
 import { AlertCircle } from 'lucide-react'
+import { redirect } from 'next/navigation'
 
 /**
- * Admin Dashboard Page
+ * Admin Dashboard Page (in protected layout)
  * Shows key statistics and quick overview
  */
 export default async function AdminDashboardPage() {
+  const session = await getAdminSession()
+
+  if (!session) {
+    redirect('/admin/login')
+  }
+
   const result = await getDashboardStats()
 
   if (!result.success) {
@@ -22,29 +29,7 @@ export default async function AdminDashboardPage() {
     )
   }
 
-  const stats = result.data!
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
-        <p className="text-slate-400">Overview of your application statistics</p>
-      </div>
-
-      <StatsCards
-        totalUsers={stats.totalUsers}
-        usersToday={stats.usersToday}
-        usersThisWeek={stats.usersThisWeek}
-        usersThisMonth={stats.usersThisMonth}
-        totalAIGenerations={stats.totalAIGenerations}
-        aiGenerationsToday={stats.aiGenerationsToday}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UsersByPlanChart data={stats.usersByPlan} />
-      </div>
-    </div>
-  )
+  return <DashboardContent data={result.data!} isSuperAdmin={session.role === 'superadmin'} />
 }
 
 export const metadata = {

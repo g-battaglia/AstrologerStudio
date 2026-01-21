@@ -9,6 +9,7 @@ import {
   type UserListItem,
   type UserDetail,
 } from '@/actions/admin'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -30,7 +31,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   Search,
   ChevronLeft,
@@ -41,6 +41,8 @@ import {
   Edit,
   MoreHorizontal,
   ArrowUpDown,
+  Calculator,
+  Columns,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -75,7 +77,7 @@ export function UsersTable() {
   const [pageSize] = useState(20)
   const [search, setSearch] = useState('')
   const [planFilter, setPlanFilter] = useState<string>('')
-  const [sortBy, setSortBy] = useState<'createdAt' | 'lastLoginAt'>('createdAt')
+  const [sortBy, setSortBy] = useState<'createdAt' | 'lastLoginAt' | 'lastActiveAt'>('createdAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [isLoading, setIsLoading] = useState(true)
 
@@ -87,6 +89,24 @@ export function UsersTable() {
   const [userToEdit, setUserToEdit] = useState<UserListItem | null>(null)
   const [newPlan, setNewPlan] = useState('')
   const [isActionLoading, setIsActionLoading] = useState(false)
+
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState({
+    email: true,
+    plan: true,
+    created: true,
+    lastLogin: true,
+    lastActive: true,
+    logins: true,
+    subjects: true,
+    charts: true,
+    calculations: true,
+    aiGenerations: true,
+  })
+
+  const toggleColumn = (column: keyof typeof visibleColumns) => {
+    setVisibleColumns((prev) => ({ ...prev, [column]: !prev[column] }))
+  }
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true)
@@ -204,95 +224,189 @@ export function UsersTable() {
             <SelectItem value="lifetime">Lifetime</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Column Visibility Toggle */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="border-slate-700 text-slate-300">
+              <Columns className="h-4 w-4 mr-2" />
+              Columns
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {Object.entries(visibleColumns).map(([key, visible]) => (
+              <DropdownMenuItem
+                key={key}
+                onClick={() => toggleColumn(key as keyof typeof visibleColumns)}
+                className="flex items-center justify-between"
+              >
+                <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                {visible && <span className="text-green-400">✓</span>}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Table */}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-900/50">
-            <TableRow className="hover:bg-transparent border-slate-700/50">
-              <TableHead className="text-slate-400 font-medium">Username</TableHead>
-              <TableHead className="text-slate-400 font-medium">Email</TableHead>
-              <TableHead className="text-slate-400 font-medium">Plan</TableHead>
-              <TableHead
-                className="text-slate-400 font-medium cursor-pointer hover:text-white"
-                onClick={() => {
-                  if (sortBy === 'createdAt') {
-                    setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
-                  } else {
-                    setSortBy('createdAt')
-                    setSortOrder('desc')
-                  }
-                }}
-              >
-                <span className="flex items-center gap-1">
-                  Created
-                  <ArrowUpDown className={`h-3 w-3 ${sortBy === 'createdAt' ? 'text-blue-400' : ''}`} />
-                </span>
-              </TableHead>
-              <TableHead
-                className="text-slate-400 font-medium cursor-pointer hover:text-white"
-                onClick={() => {
-                  if (sortBy === 'lastLoginAt') {
-                    setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
-                  } else {
-                    setSortBy('lastLoginAt')
-                    setSortOrder('desc')
-                  }
-                }}
-              >
-                <span className="flex items-center gap-1">
-                  Last Login
-                  <ArrowUpDown className={`h-3 w-3 ${sortBy === 'lastLoginAt' ? 'text-blue-400' : ''}`} />
-                </span>
-              </TableHead>
-              <TableHead className="text-slate-400 font-medium">Logins</TableHead>
-              <TableHead className="text-slate-400 font-medium">Subjects</TableHead>
-              <TableHead className="text-slate-400 font-medium">Charts</TableHead>
-              <TableHead className="text-right text-slate-400 font-medium">Actions</TableHead>
+            <TableRow className="hover:bg-transparent border-b-slate-700">
+              <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Username</TableHead>
+              {visibleColumns.email && (
+                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Email</TableHead>
+              )}
+              {visibleColumns.plan && (
+                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Plan</TableHead>
+              )}
+              {visibleColumns.created && (
+                <TableHead
+                  className="text-left px-4 py-3 text-sm font-medium text-slate-400 cursor-pointer hover:text-white"
+                  onClick={() => {
+                    if (sortBy === 'createdAt') {
+                      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
+                    } else {
+                      setSortBy('createdAt')
+                      setSortOrder('desc')
+                    }
+                  }}
+                >
+                  <span className="flex items-center gap-1">
+                    Created
+                    <ArrowUpDown className={`h-3 w-3 ${sortBy === 'createdAt' ? 'text-blue-400' : ''}`} />
+                  </span>
+                </TableHead>
+              )}
+              {visibleColumns.lastLogin && (
+                <TableHead
+                  className="text-left px-4 py-3 text-sm font-medium text-slate-400 cursor-pointer hover:text-white"
+                  onClick={() => {
+                    if (sortBy === 'lastLoginAt') {
+                      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
+                    } else {
+                      setSortBy('lastLoginAt')
+                      setSortOrder('desc')
+                    }
+                  }}
+                >
+                  <span className="flex items-center gap-1">
+                    Last Login
+                    <ArrowUpDown className={`h-3 w-3 ${sortBy === 'lastLoginAt' ? 'text-blue-400' : ''}`} />
+                  </span>
+                </TableHead>
+              )}
+              {visibleColumns.lastActive && (
+                <TableHead
+                  className="text-left px-4 py-3 text-sm font-medium text-slate-400 cursor-pointer hover:text-white"
+                  onClick={() => {
+                    if (sortBy === 'lastActiveAt') {
+                      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
+                    } else {
+                      setSortBy('lastActiveAt')
+                      setSortOrder('desc')
+                    }
+                  }}
+                >
+                  <span className="flex items-center gap-1">
+                    Last Active
+                    <ArrowUpDown className={`h-3 w-3 ${sortBy === 'lastActiveAt' ? 'text-blue-400' : ''}`} />
+                  </span>
+                </TableHead>
+              )}
+              {visibleColumns.logins && (
+                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Logins</TableHead>
+              )}
+              {visibleColumns.subjects && (
+                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Subjects</TableHead>
+              )}
+              {visibleColumns.charts && (
+                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Charts</TableHead>
+              )}
+              {visibleColumns.calculations && (
+                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <Calculator className="h-3 w-3" />
+                    Calcs
+                  </span>
+                </TableHead>
+              )}
+              {visibleColumns.aiGenerations && (
+                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">AI</TableHead>
+              )}
+              <TableHead className="text-right px-4 py-3 text-sm font-medium text-slate-400">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-slate-700/50">
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-slate-400">
+              <TableRow className="hover:bg-transparent border-none">
+                <TableCell colSpan={10} className="px-4 py-8 text-center text-slate-400">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-slate-400">
+              <TableRow className="hover:bg-transparent border-none">
+                <TableCell colSpan={10} className="px-4 py-8 text-center text-slate-400">
                   No users found
                 </TableCell>
               </TableRow>
             ) : (
               users.map((user) => (
-                <TableRow key={user.id} className="hover:bg-slate-700/20 border-slate-700/50">
-                  <TableCell className="text-white font-medium">{user.username}</TableCell>
-                  <TableCell className="text-slate-300">{user.email || '-'}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                        user.subscriptionPlan === 'pro'
-                          ? 'bg-purple-500/20 text-purple-400'
-                          : user.subscriptionPlan === 'trial'
-                            ? 'bg-blue-500/20 text-blue-400'
-                            : user.subscriptionPlan === 'lifetime'
-                              ? 'bg-amber-500/20 text-amber-400'
-                              : 'bg-slate-500/20 text-slate-400'
-                      }`}
-                    >
-                      {user.subscriptionPlan}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-slate-400">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-slate-400">
-                    {user.lastLoginAt ? formatRelativeTime(new Date(user.lastLoginAt)) : 'Never'}
-                  </TableCell>
-                  <TableCell className="text-slate-300">{user.loginCount}</TableCell>
-                  <TableCell className="text-slate-300">{user.subjectsCount}</TableCell>
-                  <TableCell className="text-slate-300">{user.savedChartsCount}</TableCell>
-                  <TableCell className="text-right">
+                <TableRow key={user.id} className="hover:bg-slate-700/20 border-b-slate-700/50">
+                  <TableCell className="px-4 py-3 text-sm text-white font-medium">{user.username}</TableCell>
+                  {visibleColumns.email && (
+                    <TableCell className="px-4 py-3 text-sm text-slate-300">{user.email || '-'}</TableCell>
+                  )}
+                  {visibleColumns.plan && (
+                    <TableCell className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                          user.subscriptionPlan === 'pro'
+                            ? 'bg-purple-500/20 text-purple-400'
+                            : user.subscriptionPlan === 'trial'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : user.subscriptionPlan === 'lifetime'
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : 'bg-slate-500/20 text-slate-400'
+                        }`}
+                      >
+                        {user.subscriptionPlan}
+                      </span>
+                    </TableCell>
+                  )}
+                  {visibleColumns.created && (
+                    <TableCell className="px-4 py-3 text-sm text-slate-400">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </TableCell>
+                  )}
+                  {visibleColumns.lastLogin && (
+                    <TableCell className="px-4 py-3 text-sm text-slate-400">
+                      {user.lastLoginAt ? formatRelativeTime(new Date(user.lastLoginAt)) : 'Never'}
+                    </TableCell>
+                  )}
+                  {visibleColumns.lastActive && (
+                    <TableCell className="px-4 py-3 text-sm text-slate-400">
+                      {user.lastActiveAt ? formatRelativeTime(new Date(user.lastActiveAt)) : 'Never'}
+                    </TableCell>
+                  )}
+                  {visibleColumns.logins && (
+                    <TableCell className="px-4 py-3 text-sm text-slate-300">{user.loginCount}</TableCell>
+                  )}
+                  {visibleColumns.subjects && (
+                    <TableCell className="px-4 py-3 text-sm text-slate-300">{user.subjectsCount}</TableCell>
+                  )}
+                  {visibleColumns.charts && (
+                    <TableCell className="px-4 py-3 text-sm text-slate-300">{user.savedChartsCount}</TableCell>
+                  )}
+                  {visibleColumns.calculations && (
+                    <TableCell className="px-4 py-3 text-sm text-purple-400 font-medium">
+                      {user.calculationsTotal.toLocaleString()}
+                    </TableCell>
+                  )}
+                  {visibleColumns.aiGenerations && (
+                    <TableCell className="px-4 py-3 text-sm text-cyan-400">{user.aiGenerationsTotal}</TableCell>
+                  )}
+                  <TableCell className="px-4 py-3 text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white h-8 w-8 p-0">

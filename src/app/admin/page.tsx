@@ -1,8 +1,7 @@
 import { getAdminSession } from '@/lib/security/admin-session'
 import { redirect } from 'next/navigation'
 import { getDashboardStats } from '@/actions/admin'
-import { StatsCards } from '@/components/admin/StatsCards'
-import { UsersByPlanChart } from '@/components/admin/UsersByPlanChart'
+import { DashboardContent } from '@/components/admin/DashboardContent'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { AlertCircle } from 'lucide-react'
@@ -35,25 +34,7 @@ export default async function AdminDashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-8">
-              <div>
-                <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
-                <p className="text-slate-400">Overview of your application statistics</p>
-              </div>
-
-              <StatsCards
-                totalUsers={result.data!.totalUsers}
-                usersToday={result.data!.usersToday}
-                usersThisWeek={result.data!.usersThisWeek}
-                usersThisMonth={result.data!.usersThisMonth}
-                totalAIGenerations={result.data!.totalAIGenerations}
-                aiGenerationsToday={result.data!.aiGenerationsToday}
-              />
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <UsersByPlanChart data={result.data!.usersByPlan} />
-              </div>
-            </div>
+            <DashboardContent data={result.data!} isSuperAdmin={session.role === 'superadmin'} />
           )}
         </main>
       </div>

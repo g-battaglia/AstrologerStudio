@@ -135,7 +135,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarRail />
       </ShadSidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b bg-background px-2 md:hidden">
+        <header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b bg-background px-2 lg:hidden">
           <SidebarTrigger aria-label="Open sidebar" />
           <div className="flex flex-1 items-center justify-between">
             <div className="brand-heading font-medium">Astrologer Studio</div>
@@ -146,7 +146,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           ref={mainRef}
           tabIndex={-1}
           aria-label="Main content"
-          className="flex-1 p-4 md:pt-0 outline-none overflow-x-hidden"
+          className="flex-1 p-4 lg:pt-0 outline-none overflow-x-hidden"
         >
           {children}
         </main>

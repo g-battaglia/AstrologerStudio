@@ -2,6 +2,7 @@
 
 import { astrologerApi } from '@/lib/api/astrologer'
 import { getSession } from '@/lib/security/session'
+import { prisma } from '@/lib/db/prisma'
 import type {
   SubjectModel,
   ChartResponse,
@@ -11,6 +12,34 @@ import type {
 } from '@/types/astrology'
 import type { Subject } from '@/types/subjects'
 import { getChartPreferences, type ChartPreferencesData } from '@/actions/preferences'
+
+/**
+ * Track a chart calculation for analytics
+ * Non-blocking: errors are logged but don't fail the chart calculation
+ */
+async function trackChartCalculation(userId: string, chartType: string): Promise<void> {
+  const today = new Date().toISOString().split('T')[0]!
+
+  try {
+    await prisma.chartCalculationUsage.upsert({
+      where: {
+        userId_date_chartType: { userId, date: today, chartType },
+      },
+      update: {
+        count: { increment: 1 },
+      },
+      create: {
+        userId,
+        date: today,
+        chartType,
+        count: 1,
+      },
+    })
+  } catch (error) {
+    // Non-blocking: don't fail the chart if tracking fails
+    console.error('Failed to track chart calculation:', error)
+  }
+}
 
 /**
  * Converts local Subject type to API SubjectModel format
@@ -112,6 +141,9 @@ export async function getNatalChart(subject: Subject, options?: ChartRequestOpti
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
 
+  // Track calculation (non-blocking)
+  trackChartCalculation(session.userId, 'natal')
+
   const prefs = await getChartPreferences()
   if (!prefs) throw new Error('User preferences not found')
 
@@ -128,6 +160,9 @@ export async function getTransitChart(
 ): Promise<ChartResponse> {
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
+
+  // Track calculation (non-blocking)
+  trackChartCalculation(session.userId, 'transit')
 
   const prefs = await getChartPreferences()
   if (!prefs) throw new Error('User preferences not found')
@@ -149,6 +184,9 @@ export async function getSynastryChart(
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
 
+  // Track calculation (non-blocking)
+  trackChartCalculation(session.userId, 'synastry')
+
   const prefs = await getChartPreferences()
   if (!prefs) throw new Error('User preferences not found')
 
@@ -168,6 +206,9 @@ export async function getCompositeChart(
 ): Promise<ChartResponse> {
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
+
+  // Track calculation (non-blocking)
+  trackChartCalculation(session.userId, 'composite')
 
   const prefs = await getChartPreferences()
   if (!prefs) throw new Error('User preferences not found')
@@ -198,6 +239,9 @@ export async function getNowChart(options?: ChartRequestOptions): Promise<ChartR
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
 
+  // Track calculation (non-blocking)
+  trackChartCalculation(session.userId, 'now')
+
   const prefs = await getChartPreferences()
   if (!prefs) throw new Error('User preferences not found')
 
@@ -212,6 +256,9 @@ export async function getSolarReturnChart(
 ): Promise<ChartResponse> {
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
+
+  // Track calculation (non-blocking)
+  trackChartCalculation(session.userId, 'solar-return')
 
   const prefs = await getChartPreferences()
   if (!prefs) throw new Error('User preferences not found')
@@ -235,6 +282,9 @@ export async function getLunarReturnChart(
 ): Promise<ChartResponse> {
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
+
+  // Track calculation (non-blocking)
+  trackChartCalculation(session.userId, 'lunar-return')
 
   const prefs = await getChartPreferences()
   if (!prefs) throw new Error('User preferences not found')
