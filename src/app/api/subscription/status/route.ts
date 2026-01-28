@@ -9,7 +9,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/security/session'
-import { getSubscriptionStatus, isDodoPaymentsEnabled } from '@/lib/subscription'
+import { getSubscriptionStatus } from '@/lib/subscription'
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const session = await getSession()

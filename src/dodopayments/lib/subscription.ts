@@ -13,7 +13,7 @@
  */
 import 'server-only'
 import { prisma } from '@/lib/db/prisma'
-import { isDodoPaymentsEnabled, planGrantsAccess, mapDodoStatusToPlan, type SubscriptionPlan } from './config'
+import { isDodoPaymentsEnabled, planGrantsAccess, type SubscriptionPlan } from './config'
 import { logger } from '@/lib/logging/server'
 
 /**
@@ -185,7 +185,7 @@ function buildSubscriptionStatus(
 export async function syncSubscriptionFromDodo(
   userId: string,
   email: string,
-  customerId?: string | null,
+  _customerId?: string | null,
 ): Promise<boolean> {
   logger.info(`[DodoPayments/Subscription] Syncing subscription for user ${userId}`)
 

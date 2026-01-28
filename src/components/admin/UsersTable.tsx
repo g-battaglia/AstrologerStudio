@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   getUsers,
   getUserDetails,
@@ -41,10 +41,29 @@ import {
   Edit,
   MoreHorizontal,
   ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   Calculator,
   Columns,
+  FileText,
 } from 'lucide-react'
 import { toast } from 'sonner'
+
+// Sortable column types
+type ServerSortableColumn = 'createdAt' | 'lastLoginAt' | 'lastActiveAt'
+type ClientSortableColumn =
+  | 'username'
+  | 'email'
+  | 'subscriptionPlan'
+  | 'loginCount'
+  | 'subjectsCount'
+  | 'savedChartsCount'
+  | 'calculationsTotal'
+  | 'aiGenerationsTotal'
+  | 'pdfExportsTotal'
+type SortableColumn = ServerSortableColumn | ClientSortableColumn
+
+const SERVER_SORTABLE_COLUMNS: ServerSortableColumn[] = ['createdAt', 'lastLoginAt', 'lastActiveAt']
 
 /**
  * Format a date as relative time (e.g., "2h ago", "3d ago")
@@ -77,8 +96,15 @@ export function UsersTable() {
   const [pageSize] = useState(20)
   const [search, setSearch] = useState('')
   const [planFilter, setPlanFilter] = useState<string>('')
-  const [sortBy, setSortBy] = useState<'createdAt' | 'lastLoginAt' | 'lastActiveAt'>('createdAt')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  // Server-side sorting (for date columns)
+  const [serverSortBy, setServerSortBy] = useState<ServerSortableColumn>('createdAt')
+  const [serverSortOrder, setServerSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  // Client-side sorting (for all other columns)
+  const [clientSortBy, setClientSortBy] = useState<SortableColumn | null>(null)
+  const [clientSortOrder, setClientSortOrder] = useState<'asc' | 'desc'>('desc')
+
   const [isLoading, setIsLoading] = useState(true)
 
   const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null)
@@ -102,6 +128,7 @@ export function UsersTable() {
     charts: true,
     calculations: true,
     aiGenerations: true,
+    pdfExports: true,
   })
 
   const toggleColumn = (column: keyof typeof visibleColumns) => {
@@ -110,17 +137,125 @@ export function UsersTable() {
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true)
-    const result = await getUsers(page, pageSize, search || undefined, planFilter || undefined, sortBy, sortOrder)
+    const result = await getUsers(
+      page,
+      pageSize,
+      search || undefined,
+      planFilter || undefined,
+      serverSortBy,
+      serverSortOrder,
+    )
     if (result.success && result.data) {
       setUsers(result.data.users)
       setTotal(result.data.total)
     }
     setIsLoading(false)
-  }, [page, pageSize, search, planFilter, sortBy, sortOrder])
+  }, [page, pageSize, search, planFilter, serverSortBy, serverSortOrder])
 
   useEffect(() => {
     fetchUsers()
   }, [fetchUsers])
+
+  // Handle column header click for sorting
+  const handleSort = (column: SortableColumn) => {
+    const isServerColumn = SERVER_SORTABLE_COLUMNS.includes(column as ServerSortableColumn)
+
+    if (isServerColumn) {
+      // Server-side sorting for date columns
+      setClientSortBy(null) // Clear client sort
+      if (serverSortBy === column) {
+        setServerSortOrder(serverSortOrder === 'desc' ? 'asc' : 'desc')
+      } else {
+        setServerSortBy(column as ServerSortableColumn)
+        setServerSortOrder('desc')
+      }
+    } else {
+      // Client-side sorting for other columns
+      if (clientSortBy === column) {
+        setClientSortOrder(clientSortOrder === 'desc' ? 'asc' : 'desc')
+      } else {
+        setClientSortBy(column)
+        setClientSortOrder('desc')
+      }
+    }
+  }
+
+  // Get sort indicator for a column
+  const getSortIndicator = (column: SortableColumn) => {
+    const isServerColumn = SERVER_SORTABLE_COLUMNS.includes(column as ServerSortableColumn)
+    const isActive = isServerColumn ? serverSortBy === column && !clientSortBy : clientSortBy === column
+    const order = isServerColumn ? serverSortOrder : clientSortOrder
+
+    if (!isActive) {
+      return <ArrowUpDown className="h-3 w-3" />
+    }
+    return order === 'desc' ? (
+      <ArrowDown className="h-3 w-3 text-blue-400" />
+    ) : (
+      <ArrowUp className="h-3 w-3 text-blue-400" />
+    )
+  }
+
+  // Client-side sorted users
+  const sortedUsers = useMemo(() => {
+    if (!clientSortBy) return users
+
+    return [...users].sort((a, b) => {
+      let aVal: string | number | null = null
+      let bVal: string | number | null = null
+
+      switch (clientSortBy) {
+        case 'username':
+          aVal = a.username.toLowerCase()
+          bVal = b.username.toLowerCase()
+          break
+        case 'email':
+          aVal = (a.email || '').toLowerCase()
+          bVal = (b.email || '').toLowerCase()
+          break
+        case 'subscriptionPlan':
+          aVal = a.subscriptionPlan
+          bVal = b.subscriptionPlan
+          break
+        case 'loginCount':
+          aVal = a.loginCount
+          bVal = b.loginCount
+          break
+        case 'subjectsCount':
+          aVal = a.subjectsCount
+          bVal = b.subjectsCount
+          break
+        case 'savedChartsCount':
+          aVal = a.savedChartsCount
+          bVal = b.savedChartsCount
+          break
+        case 'calculationsTotal':
+          aVal = a.calculationsTotal
+          bVal = b.calculationsTotal
+          break
+        case 'aiGenerationsTotal':
+          aVal = a.aiGenerationsTotal
+          bVal = b.aiGenerationsTotal
+          break
+        case 'pdfExportsTotal':
+          aVal = a.pdfExportsTotal
+          bVal = b.pdfExportsTotal
+          break
+        default:
+          return 0
+      }
+
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return clientSortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return clientSortOrder === 'asc' ? aVal - bVal : bVal - aVal
+      }
+
+      return 0
+    })
+  }, [users, clientSortBy, clientSortOrder])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -187,6 +322,27 @@ export function UsersTable() {
 
   const totalPages = Math.ceil(total / pageSize)
 
+  // Header component for sortable columns
+  const SortableHeader = ({
+    column,
+    children,
+    className = '',
+  }: {
+    column: SortableColumn
+    children: React.ReactNode
+    className?: string
+  }) => (
+    <TableHead
+      className={`text-left px-4 py-3 text-sm font-medium text-slate-400 cursor-pointer hover:text-white select-none ${className}`}
+      onClick={() => handleSort(column)}
+    >
+      <span className="flex items-center gap-1">
+        {children}
+        {getSortIndicator(column)}
+      </span>
+    </TableHead>
+  )
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -248,91 +404,39 @@ export function UsersTable() {
         </DropdownMenu>
       </div>
 
+      {/* Client-side sort notice */}
+      {clientSortBy && (
+        <p className="text-xs text-amber-400/80">
+          Sorted by {clientSortBy} within current page only (client-side sorting)
+        </p>
+      )}
+
       {/* Table */}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-900/50">
             <TableRow className="hover:bg-transparent border-b-slate-700">
-              <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Username</TableHead>
-              {visibleColumns.email && (
-                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Email</TableHead>
-              )}
-              {visibleColumns.plan && (
-                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Plan</TableHead>
-              )}
-              {visibleColumns.created && (
-                <TableHead
-                  className="text-left px-4 py-3 text-sm font-medium text-slate-400 cursor-pointer hover:text-white"
-                  onClick={() => {
-                    if (sortBy === 'createdAt') {
-                      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
-                    } else {
-                      setSortBy('createdAt')
-                      setSortOrder('desc')
-                    }
-                  }}
-                >
-                  <span className="flex items-center gap-1">
-                    Created
-                    <ArrowUpDown className={`h-3 w-3 ${sortBy === 'createdAt' ? 'text-blue-400' : ''}`} />
-                  </span>
-                </TableHead>
-              )}
-              {visibleColumns.lastLogin && (
-                <TableHead
-                  className="text-left px-4 py-3 text-sm font-medium text-slate-400 cursor-pointer hover:text-white"
-                  onClick={() => {
-                    if (sortBy === 'lastLoginAt') {
-                      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
-                    } else {
-                      setSortBy('lastLoginAt')
-                      setSortOrder('desc')
-                    }
-                  }}
-                >
-                  <span className="flex items-center gap-1">
-                    Last Login
-                    <ArrowUpDown className={`h-3 w-3 ${sortBy === 'lastLoginAt' ? 'text-blue-400' : ''}`} />
-                  </span>
-                </TableHead>
-              )}
-              {visibleColumns.lastActive && (
-                <TableHead
-                  className="text-left px-4 py-3 text-sm font-medium text-slate-400 cursor-pointer hover:text-white"
-                  onClick={() => {
-                    if (sortBy === 'lastActiveAt') {
-                      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
-                    } else {
-                      setSortBy('lastActiveAt')
-                      setSortOrder('desc')
-                    }
-                  }}
-                >
-                  <span className="flex items-center gap-1">
-                    Last Active
-                    <ArrowUpDown className={`h-3 w-3 ${sortBy === 'lastActiveAt' ? 'text-blue-400' : ''}`} />
-                  </span>
-                </TableHead>
-              )}
-              {visibleColumns.logins && (
-                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Logins</TableHead>
-              )}
-              {visibleColumns.subjects && (
-                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Subjects</TableHead>
-              )}
-              {visibleColumns.charts && (
-                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">Charts</TableHead>
-              )}
+              <SortableHeader column="username">Username</SortableHeader>
+              {visibleColumns.email && <SortableHeader column="email">Email</SortableHeader>}
+              {visibleColumns.plan && <SortableHeader column="subscriptionPlan">Plan</SortableHeader>}
+              {visibleColumns.created && <SortableHeader column="createdAt">Created</SortableHeader>}
+              {visibleColumns.lastLogin && <SortableHeader column="lastLoginAt">Last Login</SortableHeader>}
+              {visibleColumns.lastActive && <SortableHeader column="lastActiveAt">Last Active</SortableHeader>}
+              {visibleColumns.logins && <SortableHeader column="loginCount">Logins</SortableHeader>}
+              {visibleColumns.subjects && <SortableHeader column="subjectsCount">Subjects</SortableHeader>}
+              {visibleColumns.charts && <SortableHeader column="savedChartsCount">Charts</SortableHeader>}
               {visibleColumns.calculations && (
-                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <Calculator className="h-3 w-3" />
-                    Calcs
-                  </span>
-                </TableHead>
+                <SortableHeader column="calculationsTotal">
+                  <Calculator className="h-3 w-3" />
+                  Calcs
+                </SortableHeader>
               )}
-              {visibleColumns.aiGenerations && (
-                <TableHead className="text-left px-4 py-3 text-sm font-medium text-slate-400">AI</TableHead>
+              {visibleColumns.aiGenerations && <SortableHeader column="aiGenerationsTotal">AI</SortableHeader>}
+              {visibleColumns.pdfExports && (
+                <SortableHeader column="pdfExportsTotal">
+                  <FileText className="h-3 w-3" />
+                  PDF
+                </SortableHeader>
               )}
               <TableHead className="text-right px-4 py-3 text-sm font-medium text-slate-400">Actions</TableHead>
             </TableRow>
@@ -340,18 +444,18 @@ export function UsersTable() {
           <TableBody className="divide-y divide-slate-700/50">
             {isLoading ? (
               <TableRow className="hover:bg-transparent border-none">
-                <TableCell colSpan={10} className="px-4 py-8 text-center text-slate-400">
+                <TableCell colSpan={13} className="px-4 py-8 text-center text-slate-400">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                 </TableCell>
               </TableRow>
-            ) : users.length === 0 ? (
+            ) : sortedUsers.length === 0 ? (
               <TableRow className="hover:bg-transparent border-none">
-                <TableCell colSpan={10} className="px-4 py-8 text-center text-slate-400">
+                <TableCell colSpan={13} className="px-4 py-8 text-center text-slate-400">
                   No users found
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => (
+              sortedUsers.map((user) => (
                 <TableRow key={user.id} className="hover:bg-slate-700/20 border-b-slate-700/50">
                   <TableCell className="px-4 py-3 text-sm text-white font-medium">{user.username}</TableCell>
                   {visibleColumns.email && (
@@ -405,6 +509,9 @@ export function UsersTable() {
                   )}
                   {visibleColumns.aiGenerations && (
                     <TableCell className="px-4 py-3 text-sm text-cyan-400">{user.aiGenerationsTotal}</TableCell>
+                  )}
+                  {visibleColumns.pdfExports && (
+                    <TableCell className="px-4 py-3 text-sm text-emerald-400">{user.pdfExportsTotal}</TableCell>
                   )}
                   <TableCell className="px-4 py-3 text-right">
                     <DropdownMenu>
@@ -521,6 +628,10 @@ export function UsersTable() {
                 <div>
                   <p className="text-sm text-slate-400">AI Generations (Total)</p>
                   <p className="text-white">{selectedUser.aiGenerationsTotal}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-400">PDF Exports (Total)</p>
+                  <p className="text-white">{selectedUser.pdfExportsTotal}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Subjects</p>

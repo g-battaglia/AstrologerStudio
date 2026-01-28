@@ -13,6 +13,12 @@ import { logger } from '@/lib/logging/server'
 const BASE_URL = process.env.ASTROLOGER_API_URL
 const DEFAULT_TIMEOUT = 15000 // 10 seconds
 
+// Configurable API headers (defaults to RapidAPI format)
+const ASTROLOGER_API_HOST = process.env.ASTROLOGER_API_HOST || 'astrologer.p.rapidapi.com'
+const ASTROLOGER_API_HOST_HEADER = process.env.ASTROLOGER_API_HOST_HEADER || 'X-RapidAPI-Host'
+const ASTROLOGER_API_KEY_HEADER = process.env.ASTROLOGER_API_KEY_HEADER || 'X-RapidAPI-Key'
+const ASTROLOGER_API_KEY = process.env.ASTROLOGER_API_KEY || ''
+
 logger.info(`[AstrologerAPI] Configured API URL: ${BASE_URL || 'Default (RapidAPI)'}`)
 
 /**
@@ -49,10 +55,16 @@ export class AstrologerApiClient {
    * @throws Error with detailed message on failure
    */
   private async request<T>(endpoint: string, method: 'GET' | 'POST', body?: unknown): Promise<T> {
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'X-RapidAPI-Host': 'astrologer.p.rapidapi.com',
-      'X-RapidAPI-Key': this.apiKey,
+    }
+
+    // Include API auth headers only when configured
+    if (ASTROLOGER_API_HOST) {
+      headers[ASTROLOGER_API_HOST_HEADER] = ASTROLOGER_API_HOST
+    }
+    if (this.apiKey) {
+      headers[ASTROLOGER_API_KEY_HEADER] = this.apiKey
     }
 
     const controller = new AbortController()
@@ -505,6 +517,6 @@ export class AstrologerApiClient {
  * Initialized with API key from environment variable
  *
  * @remarks
- * Ensure RAPIDAPI_KEY is set in environment variables
+ * Ensure ASTROLOGER_API_KEY is set in environment variables
  */
-export const astrologerApi = new AstrologerApiClient(process.env.RAPIDAPI_KEY || '')
+export const astrologerApi = new AstrologerApiClient(ASTROLOGER_API_KEY)

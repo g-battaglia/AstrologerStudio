@@ -8,8 +8,8 @@ export function TransitFeatureSection() {
   const { sectionRef, isVisible } = useScrollAnimation()
 
   return (
-    <section ref={sectionRef} className="relative z-10 bg-muted/50 px-4 py-20 backdrop-blur-md">
-      <div className="mx-auto max-w-6xl">
+    <section ref={sectionRef} className="relative z-10 px-4 py-20">
+      <div className="mx-auto max-w-7xl">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           {/* Content - right side */}
           <div className={isVisible ? 'animate-on-scroll visible' : 'animate-on-scroll'}>

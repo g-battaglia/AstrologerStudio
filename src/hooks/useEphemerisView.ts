@@ -40,7 +40,6 @@ export function mapToTable(data: EphemerisArray): EphemerisTableRow[] {
   return data.map((item) => {
     const date = new Date(item.date)
     const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' })
-    const timeFmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' })
 
     const byName = new Map(item.planets.map((p) => [p.name, p]))
     const val = (name: string) => {

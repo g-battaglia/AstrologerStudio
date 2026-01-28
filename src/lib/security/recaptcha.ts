@@ -4,6 +4,19 @@
 
 const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify'
 
+// Check if reCAPTCHA is disabled (for self-hosted/dev environments)
+// Uses NEXT_PUBLIC_ prefix so it's available on both client and server
+const isRecaptchaDisabled = process.env.NEXT_PUBLIC_DISABLE_RECAPTCHA === 'true'
+
+// Log warning once at startup if reCAPTCHA is disabled
+if (isRecaptchaDisabled) {
+  console.warn(
+    '[SECURITY WARNING] reCAPTCHA verification is DISABLED. ' +
+      'This should only be used in development or *local* self-hosted environments. ' +
+      'Set NEXT_PUBLIC_DISABLE_RECAPTCHA=false in production.',
+  )
+}
+
 interface RecaptchaResponse {
   success: boolean
   challenge_ts?: string
@@ -31,16 +44,18 @@ interface RecaptchaResponse {
  * ```
  */
 export async function verifyRecaptcha(token: string): Promise<boolean> {
-  // Allow disabling reCAPTCHA for self-hosted environments
-  if (process.env.DISABLE_RECAPTCHA === 'true') {
+  // Allow disabling reCAPTCHA for self-hosted/dev environments
+  if (isRecaptchaDisabled) {
     return true
   }
 
   const secretKey = process.env.RECAPTCHA_SECRET_KEY
 
   if (!secretKey) {
-    console.error('RECAPTCHA_SECRET_KEY is not configured')
-    return false
+    throw new Error(
+      'RECAPTCHA_SECRET_KEY is not configured. ' +
+        'Either set RECAPTCHA_SECRET_KEY or disable reCAPTCHA with NEXT_PUBLIC_DISABLE_RECAPTCHA=true',
+    )
   }
 
   if (!token) {

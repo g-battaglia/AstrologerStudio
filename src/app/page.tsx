@@ -5,7 +5,9 @@ import type { Metadata } from 'next'
 export const dynamic = 'force-static'
 
 export const metadata: Metadata = {
-  title: 'Astrology Software for Professionals',
+  title: {
+    absolute: 'Astrologer Studio - Professional Astrology Software',
+  },
   description:
     'Astrologer Studio is a professional astrology workspace for accurate natal charts, transits, synastry, composite charts, ephemeris, and AI interpretations.',
   alternates: {

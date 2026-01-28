@@ -9,7 +9,7 @@ export function ChartsFeatureSection() {
 
   return (
     <section ref={sectionRef} className="relative z-10 px-4 py-20" id="features">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-7xl">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           {/* Content */}
           <div className={isVisible ? 'animate-on-scroll visible' : 'animate-on-scroll'}>

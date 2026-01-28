@@ -3,12 +3,17 @@
 import { Github, Heart, Code2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { useScrollAnimation } from './useScrollAnimation'
 
 export function OpenSourceSection() {
+  const { sectionRef, isVisible } = useScrollAnimation()
+
   return (
-    <section className="relative z-10 px-4 py-20 bg-muted/30">
-      <div className="mx-auto max-w-5xl text-center">
-        <div className="flex flex-col items-center justify-center gap-6">
+    <section ref={sectionRef} className="relative z-10 px-4 py-20">
+      <div className="mx-auto max-w-7xl text-center">
+        <div
+          className={`flex flex-col items-center justify-center gap-6 ${isVisible ? 'animate-on-scroll visible' : 'animate-on-scroll'}`}
+        >
           {/* AGPLv3 License Badge */}
           <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-green-500/30 bg-green-500/10">
             <Code2 className="h-4 w-4 text-green-500" />

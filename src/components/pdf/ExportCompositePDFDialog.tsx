@@ -20,6 +20,7 @@ import { toast } from 'sonner'
 import { CompositeChartPDF } from './CompositeChartPDF'
 import { usePDFBranding } from '@/stores/pdfBrandingStore'
 import { getCompositeChart } from '@/actions/astrology'
+import { trackPdfExport } from '@/actions/pdf-tracking'
 import type { ChartData, Aspect, ChartResponse, EnrichedSubjectModel } from '@/types/astrology'
 import type { Subject } from '@/types/subjects'
 import type { DateFormat, TimeFormat } from '@/lib/utils/date'
@@ -206,6 +207,9 @@ export function ExportCompositePDFDialog({
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
+
+      // Track PDF export (fire and forget - don't block the user)
+      trackPdfExport('composite').catch(() => {})
 
       toast.success('Composite PDF exported successfully!')
       setOpen(false)

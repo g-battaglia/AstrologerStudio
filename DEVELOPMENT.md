@@ -31,7 +31,7 @@ The easiest way — use the hosted API:
 
 1. Go to [RapidAPI - Astrologer API](https://rapidapi.com/gbattaglia/api/astrologer)
 2. Subscribe to the **Free plan** (or a paid plan for higher limits)
-3. Copy your API key and add it to `.env` as `RAPIDAPI_KEY`
+3. Copy your API key and add it to `.env` as `ASTROLOGER_API_KEY`
 
 #### Option B: Self-Host the API
 
@@ -62,7 +62,7 @@ Key variables:
 
 - `DATABASE_URL` – PostgreSQL connection string.
 - `SESSION_SECRET` – strong random string for session encryption.
-- `RAPIDAPI_KEY` – Astrologer API key from RapidAPI.
+- `ASTROLOGER_API_KEY` – Astrologer API key.
 - `GEONAMES_USERNAME` – GeoNames username for location lookup.
 - `OPENROUTER_API_KEY` – OpenRouter API key for AI interpretations (optional).
 - `NEXT_PUBLIC_ENABLE_AI_INTERPRETATION` – master switch for AI readings.

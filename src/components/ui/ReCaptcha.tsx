@@ -3,8 +3,16 @@
 import ReCAPTCHA from 'react-google-recaptcha'
 import { forwardRef } from 'react'
 
-// Check if reCAPTCHA is disabled (for self-hosted environments)
+// Check if reCAPTCHA is disabled (for self-hosted/dev environments)
 export const isRecaptchaDisabled = process.env.NEXT_PUBLIC_DISABLE_RECAPTCHA === 'true'
+
+// Log warning if disabled (client-side)
+if (typeof window !== 'undefined' && isRecaptchaDisabled) {
+  console.warn(
+    '[SECURITY WARNING] reCAPTCHA is DISABLED. ' +
+      'This should only be used in development or self-hosted environments.',
+  )
+}
 
 interface ReCaptchaProps {
   onChange: (token: string | null) => void
@@ -26,8 +34,10 @@ const ReCaptcha = forwardRef<ReCAPTCHA, ReCaptchaProps>(({ onChange, onExpired, 
   }
 
   if (!siteKey) {
-    console.error('NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not configured')
-    return null
+    throw new Error(
+      'NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not configured. ' +
+        'Either set NEXT_PUBLIC_RECAPTCHA_SITE_KEY or disable reCAPTCHA with NEXT_PUBLIC_DISABLE_RECAPTCHA=true',
+    )
   }
 
   return (

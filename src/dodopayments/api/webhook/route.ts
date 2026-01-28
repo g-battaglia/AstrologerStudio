@@ -13,7 +13,7 @@
  */
 import 'server-only'
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyWebhook, type DodoWebhookEventType, type DodoWebhookPayload } from '@/dodopayments/lib/server'
+import { verifyWebhook, type DodoWebhookPayload } from '@/dodopayments/lib/server'
 import { updateUserSubscription, linkDodoCustomer } from '@/dodopayments/lib/subscription'
 import { mapDodoStatusToPlan, type DodoSubscriptionStatus } from '@/dodopayments/lib/config'
 import { logger } from '@/lib/logging/server'

@@ -151,7 +151,7 @@ Key variables (see `.env.example` for complete list):
 # Required
 DATABASE_URL=postgresql://...
 SESSION_SECRET=<random-32-chars>
-RAPIDAPI_KEY=<astrologer-api-key>
+ASTROLOGER_API_KEY=<astrologer-api-key>
 
 # Optional Features
 NEXT_PUBLIC_ENABLE_AI_INTERPRETATION=true

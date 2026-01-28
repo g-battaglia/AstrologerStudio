@@ -1,6 +1,4 @@
 import { ReactNode } from 'react'
-import { getAdminSession } from '@/lib/security/admin-session'
-import { redirect } from 'next/navigation'
 
 /**
  * Root layout for /admin routes

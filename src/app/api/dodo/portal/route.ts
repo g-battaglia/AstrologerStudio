@@ -14,7 +14,7 @@ import { getCustomerPortalUrl } from '@/dodopayments/lib/server'
 import { prisma } from '@/lib/db/prisma'
 import { logger } from '@/lib/logging/server'
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(_request: NextRequest): Promise<NextResponse> {
   try {
     // Get current session
     const session = await getSession()

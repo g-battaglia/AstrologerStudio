@@ -9,7 +9,7 @@ export function SubjectsFeatureSection() {
 
   return (
     <section ref={sectionRef} className="relative z-10 px-4 py-20">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-7xl">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           {/* Screenshot */}
           <div

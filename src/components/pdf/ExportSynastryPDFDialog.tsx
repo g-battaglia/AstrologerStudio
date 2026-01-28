@@ -20,6 +20,7 @@ import { toast } from 'sonner'
 import { SynastryChartPDF } from './SynastryChartPDF'
 import { usePDFBranding } from '@/stores/pdfBrandingStore'
 import { getSynastryChart } from '@/actions/astrology'
+import { trackPdfExport } from '@/actions/pdf-tracking'
 import type { ChartData, Aspect, ChartResponse, EnrichedSubjectModel } from '@/types/astrology'
 import type { Subject } from '@/types/subjects'
 import type { DateFormat, TimeFormat } from '@/lib/utils/date'
@@ -210,6 +211,9 @@ export function ExportSynastryPDFDialog({
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
+
+      // Track PDF export (fire and forget - don't block the user)
+      trackPdfExport('synastry').catch(() => {})
 
       toast.success('Synastry PDF exported successfully!')
       setOpen(false)

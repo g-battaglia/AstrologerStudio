@@ -3,7 +3,8 @@
 // Learn more: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  queryCompiler = "native"
 }
 
 datasource db {
@@ -257,4 +258,20 @@ model AdminAuditLog {
   @@index([adminId])
   @@index([action])
   @@index([createdAt])
+}
+
+/// Track PDF export usage per user, date, and chart type
+model PDFExportUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // YYYY-MM-DD
+  chartType String   // natal, synastry, transit, composite, solar-return, lunar-return
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date, chartType])
+  @@index([userId])
+  @@index([chartType])
+  @@index([date])
 }

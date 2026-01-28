@@ -1,34 +1,17 @@
-import { useEffect, useState, useRef } from 'react'
+'use client'
+
 import Link from 'next/link'
 import { Check, Sparkles, ArrowRight, Rocket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PRICING_CONFIG } from '@/lib/config/pricing'
+import { useScrollAnimation } from './useScrollAnimation'
 
 export function PricingSection() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        if (entry?.isIntersecting) {
-          setIsVisible(true)
-        }
-      },
-      { threshold: 0.1 },
-    )
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current)
-    }
-
-    return () => observer.disconnect()
-  }, [])
+  const { sectionRef, isVisible } = useScrollAnimation()
 
   return (
     <section id="pricing" ref={sectionRef} className="relative z-10 px-4 py-20">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-12 text-center">
           <h2

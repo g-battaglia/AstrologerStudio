@@ -60,6 +60,7 @@ function writeStdout(prefix: string, message: string, args: unknown[]): void {
     process.stdout.write(`${prefix} ${message}${renderedArgs}\n`)
   } else {
     // Fallback for non-Node environments (misconfigured client bundles)
+    // eslint-disable-next-line no-console
     console.log(`${prefix} ${message}${renderedArgs}`)
   }
 }

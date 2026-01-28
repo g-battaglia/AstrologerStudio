@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useScrollAnimation } from './useScrollAnimation'
 
 const steps = [
   {
@@ -24,30 +24,11 @@ const steps = [
 ]
 
 export function HowItWorksSection() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        if (entry?.isIntersecting) {
-          setIsVisible(true)
-        }
-      },
-      { threshold: 0.1 },
-    )
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current)
-    }
-
-    return () => observer.disconnect()
-  }, [])
+  const { sectionRef, isVisible } = useScrollAnimation()
 
   return (
-    <section ref={sectionRef} className="relative z-10 px-4 py-20">
-      <div className="mx-auto max-w-4xl">
+    <section ref={sectionRef} className="relative z-10 bg-muted/50 px-4 pt-12 pb-20 backdrop-blur-md">
+      <div className="mx-auto max-w-7xl">
         <div className="mb-12 text-center">
           <h2 className="mb-4 text-3xl font-bold text-foreground">
             Get Started in
@@ -75,30 +56,11 @@ export function HowItWorksSection() {
 }
 
 export function CTASection() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        if (entry?.isIntersecting) {
-          setIsVisible(true)
-        }
-      },
-      { threshold: 0.1 },
-    )
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current)
-    }
-
-    return () => observer.disconnect()
-  }, [])
+  const { sectionRef, isVisible } = useScrollAnimation()
 
   return (
     <section ref={sectionRef} className="relative z-10 bg-muted/50 px-4 py-20 backdrop-blur-md">
-      <div className="mx-auto max-w-3xl text-center">
+      <div className="mx-auto max-w-7xl text-center">
         <div className={isVisible ? 'animate-on-scroll visible' : 'animate-on-scroll'}>
           <h2 className="mb-4 text-3xl font-bold text-foreground">
             Ready to Work with

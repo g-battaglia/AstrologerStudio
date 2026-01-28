@@ -58,6 +58,7 @@ describe('omitKeys', () => {
   it('should handle empty object', () => {
     // Edge case: empty source object
     const input = {}
+    // @ts-expect-error - Testing runtime behavior with empty object
     const result = omitKeys(input, ['nonexistent'] as const)
 
     expect(result).toEqual({})

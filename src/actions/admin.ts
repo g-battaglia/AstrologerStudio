@@ -406,6 +406,7 @@ export type UserListItem = {
   subjectsCount: number
   savedChartsCount: number
   calculationsTotal: number
+  pdfExportsTotal: number
 }
 
 export type UsersListResult = {
@@ -441,6 +442,14 @@ export async function getUsers(
       where.subscriptionPlan = planFilter
     }
 
+    // Build orderBy clause with proper NULL handling for nullable DateTime fields
+    // For DESC: NULLs should be last (most recent first, never-active users last)
+    // For ASC: NULLs should be last (oldest first, never-active users last)
+    const isNullableField = sortBy === 'lastLoginAt' || sortBy === 'lastActiveAt'
+    const orderByClause = isNullableField
+      ? [{ [sortBy]: { sort: sortOrder, nulls: 'last' as const } }, { createdAt: sortOrder }]
+      : [{ [sortBy]: sortOrder }, { id: sortOrder }]
+
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -461,7 +470,7 @@ export async function getUsers(
             },
           },
         },
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: orderByClause,
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -488,6 +497,14 @@ export async function getUsers(
     })
     const calcCountMap = new Map(calculationCounts.map((c) => [c.userId, c._sum.count || 0]))
 
+    // Get PDF export counts for these users
+    const pdfExportCounts = await prisma.pDFExportUsage.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds } },
+      _sum: { count: true },
+    })
+    const pdfCountMap = new Map<string, number>(pdfExportCounts.map((c) => [c.userId, c._sum.count || 0]))
+
     return {
       success: true,
       data: {
@@ -504,6 +521,7 @@ export async function getUsers(
           subjectsCount: u._count.subjects,
           savedChartsCount: u._count.savedCharts,
           calculationsTotal: calcCountMap.get(u.id) || 0,
+          pdfExportsTotal: pdfCountMap.get(u.id) || 0,
         })),
         total,
         page,
@@ -533,6 +551,7 @@ export type UserDetail = {
   subjectsCount: number
   savedChartsCount: number
   todayAIUsage: number
+  pdfExportsTotal: number
 }
 
 /**
@@ -559,6 +578,12 @@ export async function getUserDetails(userId: string): Promise<ActionResult<UserD
     const today = new Date().toISOString().split('T')[0]!
     const todayUsage = await prisma.userAIUsage.findUnique({
       where: { userId_date: { userId, date: today } },
+    })
+
+    // Get PDF export total for this user
+    const pdfExportResult = await prisma.pDFExportUsage.aggregate({
+      where: { userId },
+      _sum: { count: true },
     })
 
     // Log this action
@@ -594,6 +619,7 @@ export async function getUserDetails(userId: string): Promise<ActionResult<UserD
         subjectsCount: user._count.subjects,
         savedChartsCount: user._count.savedCharts,
         todayAIUsage: todayUsage?.count || 0,
+        pdfExportsTotal: pdfExportResult._sum.count || 0,
       },
     }
   })

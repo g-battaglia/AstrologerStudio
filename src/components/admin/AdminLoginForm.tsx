@@ -6,11 +6,19 @@ import { adminLogin } from '@/actions/admin'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { isRecaptchaDisabled } from '@/components/ui/ReCaptcha'
 import ReCAPTCHA from 'react-google-recaptcha'
 import { Loader2, Lock, User, AlertCircle } from 'lucide-react'
 
-// Check if reCAPTCHA is disabled (for self-hosted environments)
-const isRecaptchaDisabled = process.env.NEXT_PUBLIC_DISABLE_RECAPTCHA === 'true'
+const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+
+// Validate reCAPTCHA configuration at module load time
+if (!isRecaptchaDisabled && !recaptchaSiteKey) {
+  throw new Error(
+    'NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not configured. ' +
+      'Either set NEXT_PUBLIC_RECAPTCHA_SITE_KEY or disable reCAPTCHA with NEXT_PUBLIC_DISABLE_RECAPTCHA=true',
+  )
+}
 
 /**
  * Admin Login Form with reCAPTCHA
@@ -107,7 +115,7 @@ export function AdminLoginForm() {
 
       {!isRecaptchaDisabled && (
         <div className="flex justify-center">
-          <ReCAPTCHA ref={recaptchaRef} sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''} theme="dark" />
+          <ReCAPTCHA ref={recaptchaRef} sitekey={recaptchaSiteKey!} theme="dark" />
         </div>
       )}
 

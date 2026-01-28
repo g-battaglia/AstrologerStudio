@@ -19,7 +19,8 @@ import { useEphemerisData } from '@/hooks/useEphemerisData'
 import { mapToTable, mapToChart } from '@/hooks/useEphemerisView'
 import { PlanetLegend } from '@/components/ephemeris/PlanetLegend'
 import { ChartTooltip } from '@/components/ephemeris/ChartTooltip'
-import { RefreshCw } from 'lucide-react'
+// RefreshCw icon commented out for now - see FIXME below
+// import { RefreshCw } from 'lucide-react'
 import { TimeRangeSelector, TimeRange } from '@/components/TimeRangeSelector'
 import type { ChartPreferencesData } from '@/actions/preferences'
 import { formatPlanetName } from '@/lib/astrology/planet-formatting'
@@ -88,7 +89,7 @@ export function EphemerisView({ preferences, currentTimeRange }: EphemerisViewPr
     isLoading,
     error,
     progress,
-    refetch,
+    // refetch, - commented out as the refresh button is hidden (see FIXME below)
   } = useEphemerisData({
     startDate,
     endDate,
