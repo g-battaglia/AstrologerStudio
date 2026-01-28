@@ -1,7 +1,17 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { startOfMonth, endOfMonth, format, addMonths, isSameMonth, isBefore, startOfDay, endOfDay } from 'date-fns'
+import {
+  startOfMonth,
+  endOfMonth,
+  format,
+  addMonths,
+  isSameMonth,
+  isBefore,
+  startOfDay,
+  endOfDay,
+  getDaysInMonth,
+} from 'date-fns'
 import { type TransitDayData } from '@/lib/api/transits'
 import { getTransitRange } from '@/actions/transits'
 import { getCachedTransitMonth, setCachedTransitMonth } from '@/lib/cache/transits'
@@ -95,17 +105,23 @@ export function useTransitData({
               chartOptions,
             )) as TransitDayData[]
 
-            // Save to Cache (only if we fetched the full month)
+            // Save to Cache (only if we fetched the full month AND data is complete)
             const isFullMonth = fetchStart.getTime() <= monthStart.getTime() && fetchEnd.getTime() >= monthEnd.getTime()
+            const expectedDays = getDaysInMonth(monthDate)
+            const isComplete = fetchedData.length >= expectedDays
 
-            if (isFullMonth) {
+            if (isFullMonth && isComplete) {
               await setCachedTransitMonth(subjectId, monthStr, fetchedData)
+            } else if (isFullMonth && !isComplete) {
+              clientLogger.warn(
+                `[useTransitData] Incomplete data for ${monthStr}: ${fetchedData.length}/${expectedDays} days - not caching`,
+              )
             }
 
             loadedMonthsData.set(monthStr, fetchedData)
             updateState()
           } catch (error) {
-            clientLogger.error(`Failed to fetch transits for ${monthStr}`, error)
+            clientLogger.error(`[useTransitData] Failed to fetch transits for ${monthStr}:`, error)
           }
         }
 

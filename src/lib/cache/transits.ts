@@ -1,10 +1,11 @@
 import type { TransitDayData } from '@/lib/api/transits'
 import { clientLogger } from '@/lib/logging/client'
+import { getDaysInMonth, parse } from 'date-fns'
 
 const DB_NAME = 'transit-db'
-const DB_VERSION = 1
+const DB_VERSION = 2 // Bumped to invalidate corrupted cache entries
 const STORE_NAME = 'transits'
-const CACHE_TTL_DAYS = 90 // Cache expires after 90 days (transits are static for a location/time)
+const CACHE_TTL_DAYS = 5 // Cache expires after 5 days
 
 interface CachedTransitMonth {
   key: string // Format: subjectId_YYYY-MM
@@ -88,6 +89,16 @@ export async function getCachedTransitMonth(
         // Check if cache is still fresh
         if (!isCacheFresh(result.timestamp)) {
           clientLogger.debug('Transit cache expired for:', key)
+          resolve(null)
+          return
+        }
+
+        // Validate completeness: ensure all days of the month are present
+        const expectedDays = getDaysInMonth(parse(monthStr, 'yyyy-MM', new Date()))
+        if (result.data.length < expectedDays) {
+          clientLogger.debug(
+            `Transit cache incomplete for ${key}: ${result.data.length}/${expectedDays} days, forcing re-fetch`,
+          )
           resolve(null)
           return
         }
