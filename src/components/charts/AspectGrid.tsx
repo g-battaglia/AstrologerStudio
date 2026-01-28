@@ -150,28 +150,58 @@ export function AspectGrid({
     return undefined
   }
 
-  // Extract unique planets from aspects instead of using static list
-  const planets = useMemo(() => {
-    const planetSet = new Set<string>()
-    aspects.forEach((aspect) => {
-      planetSet.add(aspect.p1_name)
-      planetSet.add(aspect.p2_name)
-    })
+  // For double charts, separate row planets (p1/first subject) from column planets (p2/second subject)
+  // For single charts, use the same list for both
+  const { rowPlanets, colPlanets } = useMemo(() => {
+    if (type === 'single') {
+      // Single chart: same planets for both rows and columns
+      const planetSet = new Set<string>()
+      aspects.forEach((aspect) => {
+        planetSet.add(aspect.p1_name)
+        planetSet.add(aspect.p2_name)
+      })
 
-    let availablePlanets = Array.from(planetSet)
+      let availablePlanets = Array.from(planetSet)
+      if (activePoints && activePoints.length > 0) {
+        availablePlanets = availablePlanets.filter((p) => activePoints.includes(p))
+      }
 
-    // Filter by activePoints if provided
-    if (activePoints && activePoints.length > 0) {
-      availablePlanets = availablePlanets.filter((p) => activePoints.includes(p))
+      const sortedPlanets = ALL_CELESTIAL_POINTS.filter((planet) => availablePlanets.includes(planet))
+      return { rowPlanets: sortedPlanets, colPlanets: sortedPlanets }
     }
 
-    // Return in canonical order of CELESTIAL_POINTS, but only include those present in aspects (and active)
-    return ALL_CELESTIAL_POINTS.filter((planet) => availablePlanets.includes(planet))
-  }, [aspects, activePoints])
+    // Double chart: rows = p1 (first subject/natal), columns = p2 (second subject/transit)
+    const rowSet = new Set<string>()
+    const colSet = new Set<string>()
+    aspects.forEach((aspect) => {
+      rowSet.add(aspect.p1_name)
+      colSet.add(aspect.p2_name)
+    })
 
-  const getAspect = (p1: string, p2: string) => {
+    let rowAvailable = Array.from(rowSet)
+    let colAvailable = Array.from(colSet)
+
+    if (activePoints && activePoints.length > 0) {
+      rowAvailable = rowAvailable.filter((p) => activePoints.includes(p))
+      colAvailable = colAvailable.filter((p) => activePoints.includes(p))
+    }
+
+    return {
+      rowPlanets: ALL_CELESTIAL_POINTS.filter((planet) => rowAvailable.includes(planet)),
+      colPlanets: ALL_CELESTIAL_POINTS.filter((planet) => colAvailable.includes(planet)),
+    }
+  }, [aspects, activePoints, type])
+
+  const getAspect = (rowPlanet: string, colPlanet: string) => {
+    if (type === 'double') {
+      // For double charts: row = p1 (first subject), col = p2 (second subject)
+      // No need to check both directions since p1/p2 are from different subjects
+      return aspects.find((a) => a.p1_name === rowPlanet && a.p2_name === colPlanet)
+    }
+    // For single charts: check both directions since aspects can be stored either way
     return aspects.find(
-      (a) => (a.p1_name === p1 && a.p2_name === p2) || (type === 'single' && a.p1_name === p2 && a.p2_name === p1),
+      (a) =>
+        (a.p1_name === rowPlanet && a.p2_name === colPlanet) || (a.p1_name === colPlanet && a.p2_name === rowPlanet),
     )
   }
 
@@ -184,12 +214,12 @@ export function AspectGrid({
           <div
             className="grid gap-1"
             style={{
-              gridTemplateColumns: `auto repeat(${planets.length}, minmax(48px, 1fr))`,
+              gridTemplateColumns: `auto repeat(${colPlanets.length}, minmax(48px, 1fr))`,
             }}
           >
             {/* Header Row */}
             <div className="h-10 w-10"></div>
-            {planets.map((planet) => (
+            {colPlanets.map((planet) => (
               <div
                 key={`col-${planet}`}
                 className="flex h-10 items-center justify-center font-bold text-xs sm:text-sm truncate px-1 text-muted-foreground"
@@ -200,7 +230,7 @@ export function AspectGrid({
             ))}
 
             {/* Grid Rows */}
-            {planets.map((rowPlanet, rowIndex) => (
+            {rowPlanets.map((rowPlanet, rowIndex) => (
               <Fragment key={rowPlanet}>
                 {/* Row Label */}
                 <div
@@ -212,7 +242,7 @@ export function AspectGrid({
                 </div>
 
                 {/* Cells */}
-                {planets.map((colPlanet, colIndex) => {
+                {colPlanets.map((colPlanet, colIndex) => {
                   // For single chart, we only render the lower triangle (colIndex < rowIndex)
                   if (type === 'single' && colIndex >= rowIndex) {
                     return <div key={`${rowPlanet}-${colPlanet}`} className="bg-muted/10 rounded-md" />
