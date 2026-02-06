@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Calculator, Trash2, Loader2, AlertTriangle, RefreshCw, TrendingUp, Calendar, PieChartIcon } from 'lucide-react'
@@ -83,6 +83,7 @@ export function CalculationsPageContent({ isSuperAdmin }: CalculationsPageConten
   const [clearTimeRange, setClearTimeRange] = useState<ClearHistoryTimeRange>('day')
   const [isClearing, setIsClearing] = useState(false)
   const [topUsers, setTopUsers] = useState<TopUserByCalculations[]>([])
+  const isMountedRef = useRef(true)
 
   // User Filter State
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
@@ -96,17 +97,23 @@ export function CalculationsPageContent({ isSuperAdmin }: CalculationsPageConten
 
   // Search users effect
   useEffect(() => {
+    let mounted = true
+
     const search = async () => {
       if (!debouncedSearchQuery || debouncedSearchQuery.length < 2) {
         setUserSearchResults([])
         return
       }
       const result = await searchUsers(debouncedSearchQuery)
-      if (result.success && result.data) {
+      if (mounted && result.success && result.data) {
         setUserSearchResults(result.data)
       }
     }
     search()
+
+    return () => {
+      mounted = false
+    }
   }, [debouncedSearchQuery])
 
   const fetchData = useCallback(async () => {
@@ -116,29 +123,43 @@ export function CalculationsPageContent({ isSuperAdmin }: CalculationsPageConten
       if (selectedUserId) {
         // Fetch filtered data for specific user
         const result = await getCalculationStats(selectedUserId)
-        if (result.success && result.data) {
+        if (isMountedRef.current && result.success && result.data) {
           setData(result.data)
         }
         // When filtering by user, we don't show top users
-        setTopUsers([])
+        if (isMountedRef.current) {
+          setTopUsers([])
+        }
       } else {
         // Fetch global data
         const [statsResult, topUsersResult] = await Promise.all([getDashboardStats(), getTopUsersByCalculations(15)])
 
-        if (statsResult.success && statsResult.data) {
+        if (isMountedRef.current && statsResult.success && statsResult.data) {
           setData(statsResult.data)
         }
-        if (topUsersResult.success && topUsersResult.data) {
+        if (isMountedRef.current && topUsersResult.success && topUsersResult.data) {
           setTopUsers(topUsersResult.data)
         }
       }
     } catch (error) {
       clientLogger.error('Failed to fetch calculation data:', error)
-      toast.error('Failed to load calculation data')
+      if (isMountedRef.current) {
+        toast.error('Failed to load calculation data')
+      }
     }
 
-    setIsLoading(false)
+    if (isMountedRef.current) {
+      setIsLoading(false)
+    }
   }, [selectedUserId])
+
+  useEffect(() => {
+    isMountedRef.current = true
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     fetchData()

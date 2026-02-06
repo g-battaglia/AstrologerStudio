@@ -45,8 +45,24 @@ const mockChartData = {
     first_subject: { name: 'Natal', iso_formatted_utc_datetime: '1990-06-15T12:30:00Z' },
     second_subject: { name: 'Return', iso_formatted_utc_datetime: '2025-06-15T08:30:00Z' },
     aspects: [],
-    element_distribution: { fire: 3, earth: 2, air: 3, water: 2, fire_percentage: 30, earth_percentage: 20, air_percentage: 30, water_percentage: 20 },
-    quality_distribution: { cardinal: 3, fixed: 4, mutable: 3, cardinal_percentage: 30, fixed_percentage: 40, mutable_percentage: 30 },
+    element_distribution: {
+      fire: 3,
+      earth: 2,
+      air: 3,
+      water: 2,
+      fire_percentage: 30,
+      earth_percentage: 20,
+      air_percentage: 30,
+      water_percentage: 20,
+    },
+    quality_distribution: {
+      cardinal: 3,
+      fixed: 4,
+      mutable: 3,
+      cardinal_percentage: 30,
+      fixed_percentage: 40,
+      mutable_percentage: 30,
+    },
     active_points: ['Sun', 'Moon'],
     active_aspects: [],
     houses_names_list: [],
@@ -94,13 +110,27 @@ vi.mock('@/lib/utils/date', () => ({
 
 // Mock child components to avoid deep rendering
 vi.mock('@/components/charts/ChartViewWrapper', () => ({
-  ChartViewWrapper: ({ children, hasSubject }: { children: React.ReactNode; hasSubject: boolean; isLoading: boolean; error: unknown }) =>
-    hasSubject ? <div data-testid="chart-view-wrapper">{children}</div> : <div data-testid="chart-view-wrapper-empty">No subject</div>,
+  ChartViewWrapper: ({
+    children,
+    hasSubject,
+  }: {
+    children: React.ReactNode
+    hasSubject: boolean
+    isLoading: boolean
+    error: unknown
+  }) =>
+    hasSubject ? (
+      <div data-testid="chart-view-wrapper">{children}</div>
+    ) : (
+      <div data-testid="chart-view-wrapper-empty">No subject</div>
+    ),
 }))
 
 vi.mock('@/components/ui/tabs', () => ({
   Tabs: ({ children, ...props }: { children: React.ReactNode; defaultValue: string; className: string }) => (
-    <div data-testid="tabs" {...props}>{children}</div>
+    <div data-testid="tabs" {...props}>
+      {children}
+    </div>
   ),
 }))
 
@@ -116,12 +146,22 @@ vi.mock('@/components/ui/select', () => ({
   Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => <div data-value={value}>{children}</div>,
+  SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => (
+    <div data-value={value}>{children}</div>
+  ),
   SelectValue: () => <span />,
 }))
 
 vi.mock('@/components/SaveChartButton', () => ({
-  SaveChartButton: ({ chartType, defaultName }: { chartType: string; defaultName: string; chartParams: unknown; notes: string }) => (
+  SaveChartButton: ({
+    chartType,
+    defaultName,
+  }: {
+    chartType: string
+    defaultName: string
+    chartParams: unknown
+    notes: string
+  }) => (
     <button data-testid="save-chart-button" data-chart-type={chartType} data-name={defaultName}>
       Save
     </button>
@@ -145,13 +185,37 @@ vi.mock('@/components/ui/LunarReturnNavigator', () => ({
 }))
 
 vi.mock('@/components/charts/NatalChart', () => ({
-  NatalChart: ({ chartTypeOverride, dateLabel }: { chartTypeOverride: string; dateLabel: string; data: unknown; subjectId: string; notes: string; onNotesChange: unknown; isDataStale: boolean; staleDataLabel?: string }) => (
-    <div data-testid="natal-chart" data-chart-type={chartTypeOverride} data-date-label={dateLabel} />
-  ),
+  NatalChart: ({
+    chartTypeOverride,
+    dateLabel,
+  }: {
+    chartTypeOverride: string
+    dateLabel: string
+    data: unknown
+    subjectId: string
+    notes: string
+    onNotesChange: unknown
+    isDataStale: boolean
+    staleDataLabel?: string
+  }) => <div data-testid="natal-chart" data-chart-type={chartTypeOverride} data-date-label={dateLabel} />,
 }))
 
 vi.mock('@/components/charts/SynastryChart', () => ({
-  SynastryChart: ({ chartTypeOverride, subject2DateLabel }: { chartTypeOverride: string; subject2DateLabel: string; data: unknown; subject1Data: unknown; subject2Data: unknown; notes: string; onNotesChange: unknown; subject1DateLabel: string; isDataStale: boolean; staleDataLabel?: string }) => (
+  SynastryChart: ({
+    chartTypeOverride,
+    subject2DateLabel,
+  }: {
+    chartTypeOverride: string
+    subject2DateLabel: string
+    data: unknown
+    subject1Data: unknown
+    subject2Data: unknown
+    notes: string
+    onNotesChange: unknown
+    subject1DateLabel: string
+    isDataStale: boolean
+    staleDataLabel?: string
+  }) => (
     <div data-testid="synastry-chart" data-chart-type={chartTypeOverride} data-subject2-label={subject2DateLabel} />
   ),
 }))
@@ -200,10 +264,10 @@ describe('PlanetaryReturnView', () => {
       expect(saveButton).toHaveAttribute('data-chart-type', 'solar-return')
     })
 
-    it('should pass solar_return chartTypeOverride to SynastryChart', () => {
+    it('should pass solar-return chartTypeOverride to SynastryChart', () => {
       render(<PlanetaryReturnView subjectId="subj-1" returnType="solar" />)
       const synastryChart = screen.getByTestId('synastry-chart')
-      expect(synastryChart).toHaveAttribute('data-chart-type', 'solar_return')
+      expect(synastryChart).toHaveAttribute('data-chart-type', 'solar-return')
     })
 
     it('should use Solar Return Date and Time as subject2 label', () => {
@@ -241,10 +305,10 @@ describe('PlanetaryReturnView', () => {
       expect(saveButton).toHaveAttribute('data-chart-type', 'lunar-return')
     })
 
-    it('should pass lunar_return chartTypeOverride to SynastryChart', () => {
+    it('should pass lunar-return chartTypeOverride to SynastryChart', () => {
       render(<PlanetaryReturnView subjectId="subj-1" returnType="lunar" />)
       const synastryChart = screen.getByTestId('synastry-chart')
-      expect(synastryChart).toHaveAttribute('data-chart-type', 'lunar_return')
+      expect(synastryChart).toHaveAttribute('data-chart-type', 'lunar-return')
     })
 
     it('should use Lunar Return Date and Time as subject2 label', () => {

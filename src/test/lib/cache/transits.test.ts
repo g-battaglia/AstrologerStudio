@@ -288,6 +288,28 @@ describe('Transit Cache', () => {
         vi.restoreAllMocks()
       })
 
+      it('should delete expired cache entry when accessed', async () => {
+        const subjectId = 'subject-expired-deletion'
+        const monthStr = '2025-09'
+        const data = createFullMonthData(monthStr, 30)
+
+        await setCachedTransitMonth(subjectId, monthStr, data)
+
+        // Move beyond 5-day TTL
+        const sixDaysInMs = 6 * 24 * 60 * 60 * 1000
+        const originalDateNow = Date.now
+        vi.spyOn(Date, 'now').mockReturnValue(originalDateNow() + sixDaysInMs)
+
+        const expiredResult = await getCachedTransitMonth(subjectId, monthStr)
+        expect(expiredResult).toBeNull()
+
+        vi.restoreAllMocks()
+
+        // If stale entry was not deleted, this would return data again
+        const afterCleanupResult = await getCachedTransitMonth(subjectId, monthStr)
+        expect(afterCleanupResult).toBeNull()
+      })
+
       it('should return data for cache within TTL (4 days)', async () => {
         const subjectId = 'subject-fresh'
         const monthStr = '2025-10'
@@ -381,8 +403,7 @@ describe('Transit Cache', () => {
     it('should not throw when clearing empty cache', async () => {
       // Cache is already empty from beforeEach
       const result = await clearTransitCache()
-      // clearTransitCache returns void/undefined
-      expect(result).toBeUndefined()
+      expect(result).toBe(true)
     })
 
     it('should allow re-caching after clear', async () => {
@@ -415,8 +436,7 @@ describe('Transit Cache', () => {
 
     it('should complete without error when clearTransitCache is called on empty cache', async () => {
       const result = await clearTransitCache()
-      // clearTransitCache returns void/undefined
-      expect(result).toBeUndefined()
+      expect(result).toBe(true)
     })
 
     it('should return null when getCachedTransitMonth encounters an error', async () => {
@@ -469,7 +489,7 @@ describe('Transit Cache', () => {
 
       // Should not throw, just silently fail
       const result = await clearTransitCacheWithError()
-      expect(result).toBeUndefined()
+      expect(result).toBe(false)
 
       // Restore original
       indexedDB.open = originalOpen

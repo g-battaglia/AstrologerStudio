@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone output for optimized Docker deployments
+  // Reduces image size from ~1GB to ~100MB and memory usage significantly
+  output: 'standalone',
   // Security headers
   async headers() {
     // Environment-based CSP configuration

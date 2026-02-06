@@ -8,6 +8,7 @@ import { createAdminSession, deleteAdminSession, getAdminSession, getClientIp } 
 import { verifyRecaptcha } from '@/lib/security/recaptcha'
 import { withAdminAuth, withSuperAdminAuth } from '@/lib/security/admin-auth'
 import { checkAccountLockout, recordFailedLogin, clearFailedLogins } from '@/lib/security/rate-limit'
+import { logger } from '@/lib/logging/server'
 
 /**
  * Admin Server Actions
@@ -719,12 +720,47 @@ export async function updateUserPlan(userId: string, newPlan: string): Promise<A
 
 /**
  * Delete a user account (superadmin only)
+ *
+ * Cancels any active Dodo Payments subscription before deleting.
  */
 export async function deleteUser(userId: string): Promise<ActionResult> {
   return withSuperAdminAuth(async (session) => {
-    const user = await prisma.user.findUnique({ where: { id: userId } })
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        subscriptionId: true,
+        subscriptionPlan: true,
+      },
+    })
     if (!user) {
       return { success: false, error: 'User not found' }
+    }
+
+    // Cancel Dodo Payments subscription if active
+    if (
+      user.subscriptionId &&
+      user.subscriptionPlan &&
+      user.subscriptionPlan !== 'free' &&
+      user.subscriptionPlan !== 'lifetime'
+    ) {
+      try {
+        // Dynamic import to avoid issues if Dodo Payments module is not installed
+        const { cancelSubscription } = await import('@/dodopayments/lib/server')
+        const result = await cancelSubscription(user.subscriptionId, { immediate: true })
+
+        if (!result.success) {
+          logger.warn(`Failed to cancel Dodo Payments subscription for user ${userId}: ${result.error}`)
+          // Continue with deletion anyway - subscription will expire naturally
+        } else {
+          logger.info(`Dodo Payments subscription cancelled for user ${userId}`)
+        }
+      } catch (error) {
+        logger.warn(`Dodo Payments module not available for subscription cancellation: ${error}`)
+        // Continue with deletion - Dodo Payments might not be installed
+      }
     }
 
     // Delete the user (cascades to related data)

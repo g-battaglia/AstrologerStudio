@@ -231,6 +231,27 @@ describe('Ephemeris Cache', () => {
         vi.restoreAllMocks()
       })
 
+      it('should delete expired cache entry when accessed', async () => {
+        const startDate = new Date('2025-07-01')
+        const endDate = new Date('2025-07-31')
+
+        await setCachedEphemeris(startDate, endDate, sampleEphemerisData)
+
+        // Move beyond 30-day TTL
+        const thirtyOneDaysInMs = 31 * 24 * 60 * 60 * 1000
+        const originalDateNow = Date.now
+        vi.spyOn(Date, 'now').mockReturnValue(originalDateNow() + thirtyOneDaysInMs)
+
+        const expiredResult = await getCachedEphemeris(startDate, endDate)
+        expect(expiredResult).toBeNull()
+
+        vi.restoreAllMocks()
+
+        // If the stale entry was not deleted, this would return data again
+        const afterCleanupResult = await getCachedEphemeris(startDate, endDate)
+        expect(afterCleanupResult).toBeNull()
+      })
+
       it('should return data for cache within TTL', async () => {
         const startDate = new Date('2025-08-01')
         const endDate = new Date('2025-08-31')
@@ -271,8 +292,7 @@ describe('Ephemeris Cache', () => {
     it('should not throw when clearing empty cache', async () => {
       // Cache is already empty from beforeEach
       const result = await clearEphemerisCache()
-      // clearEphemerisCache returns void/undefined
-      expect(result).toBeUndefined()
+      expect(result).toBe(true)
     })
 
     it('should allow re-caching after clear', async () => {
@@ -377,8 +397,7 @@ describe('Ephemeris Cache', () => {
 
     it('should complete without error when clearEphemerisCache is called on empty cache', async () => {
       const result = await clearEphemerisCache()
-      // clearEphemerisCache returns void/undefined
-      expect(result).toBeUndefined()
+      expect(result).toBe(true)
     })
 
     it('should return null when getCachedEphemeris encounters an error', async () => {
@@ -437,7 +456,7 @@ describe('Ephemeris Cache', () => {
 
       // Should not throw, just silently fail
       const result = await clearEphemerisCacheWithError()
-      expect(result).toBeUndefined()
+      expect(result).toBe(false)
 
       // Restore original
       indexedDB.open = originalOpen

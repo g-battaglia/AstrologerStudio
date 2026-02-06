@@ -689,7 +689,7 @@ describe('Auth Actions', () => {
 
       const result = await changePassword('CurrentPass1!', 'weak')
 
-      expect(result.error).toContain('New password must be at least 8 characters')
+      expect(result.error).toContain('Password must be at least 8 characters')
     })
 
     it('should return error when user not found', async () => {

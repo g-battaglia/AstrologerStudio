@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logging/server'
 
 /**
  * Simple in-memory rate limiter
@@ -26,6 +27,10 @@ interface RateLimitEntry {
 // Note: This resets on server restart and doesn't work across multiple instances
 // For production with multiple instances, use Redis
 const rateLimitStore = new Map<string, RateLimitEntry>()
+
+// Maximum entries to prevent memory leaks from distributed traffic (bots, DDoS, crawlers)
+// When limit is reached, oldest entries are evicted (LRU-style)
+const MAX_RATE_LIMIT_ENTRIES = 10_000
 
 // Clean up old entries periodically
 const CLEANUP_INTERVAL = 60 * 1000 // 1 minute
@@ -132,6 +137,19 @@ export function checkRateLimit(identifier: string, config: RateLimitConfig): Rat
       count: 1,
       resetTime: now + windowMs,
     }
+
+    // Evict oldest entry if at capacity (LRU-style eviction)
+    if (rateLimitStore.size >= MAX_RATE_LIMIT_ENTRIES) {
+      const oldestKey = rateLimitStore.keys().next().value
+      if (oldestKey) {
+        rateLimitStore.delete(oldestKey)
+        logger.warn('[RateLimit] rateLimitStore at capacity, evicted oldest entry', {
+          evictedKey: oldestKey,
+          storeSize: MAX_RATE_LIMIT_ENTRIES,
+        })
+      }
+    }
+
     rateLimitStore.set(key, newEntry)
 
     // Start cleanup timer lazily on first entry
@@ -248,6 +266,9 @@ interface FailedLoginEntry {
 // In-memory store for failed login attempts
 const failedLoginStore = new Map<string, FailedLoginEntry>()
 
+// Maximum entries to prevent memory leaks from brute-force attempts with many usernames
+const MAX_FAILED_LOGIN_ENTRIES = 5_000
+
 const MAX_FAILED_ATTEMPTS = 5
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000 // 15 minutes
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000 // Track attempts within 15 min window
@@ -300,6 +321,17 @@ export function recordFailedLogin(username: string): void {
   const entry = failedLoginStore.get(username)
 
   if (!entry || now - entry.firstAttemptTime > ATTEMPT_WINDOW_MS) {
+    // Evict oldest entry if at capacity (LRU-style eviction)
+    if (failedLoginStore.size >= MAX_FAILED_LOGIN_ENTRIES) {
+      const oldestKey = failedLoginStore.keys().next().value
+      if (oldestKey) {
+        failedLoginStore.delete(oldestKey)
+        logger.warn('[RateLimit] failedLoginStore at capacity, evicted oldest entry', {
+          storeSize: MAX_FAILED_LOGIN_ENTRIES,
+        })
+      }
+    }
+
     // Start new tracking window
     failedLoginStore.set(username, {
       count: 1,

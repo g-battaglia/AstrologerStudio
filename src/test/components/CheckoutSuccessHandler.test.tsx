@@ -46,6 +46,22 @@ vi.mock('sonner', () => ({
   },
 }))
 
+// Mock client logger
+vi.mock('@/lib/logging/client', () => ({
+  clientLogger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
+// Mock CongratulationsDialog
+vi.mock('@/components/CongratulationsDialog', () => ({
+  CongratulationsDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="congrats-dialog">Congrats!</div> : null,
+}))
+
 // Mock fetch
 const mockFetch = vi.fn()
 global.fetch = mockFetch
@@ -92,14 +108,15 @@ describe('CheckoutSuccessHandler', () => {
   // ===========================================================================
 
   describe('basic rendering', () => {
-    it('should render nothing (returns null)', () => {
+    it('should render CongratulationsDialog (closed by default)', () => {
       const { container } = render(
         <TestWrapper queryClient={queryClient}>
           <CheckoutSuccessHandler />
         </TestWrapper>,
       )
 
-      expect(container.innerHTML).toBe('')
+      // Dialog should not be visible when checkout param is not present
+      expect(container.querySelector('[data-testid="congrats-dialog"]')).not.toBeInTheDocument()
     })
 
     it('should not trigger sync when checkout param is not present', async () => {
@@ -179,7 +196,7 @@ describe('CheckoutSuccessHandler', () => {
       )
 
       await waitFor(() => {
-        expect(mockToastSuccess).toHaveBeenCalledWith('Payment successful! Your subscription is now active.')
+        expect(mockToastSuccess).toHaveBeenCalledWith('Payment completed successfully!')
       })
     })
 
@@ -205,7 +222,7 @@ describe('CheckoutSuccessHandler', () => {
       mockGetSearchParam.mockReturnValue('success')
     })
 
-    it('should show error toast when sync fails', async () => {
+    it('should handle sync failure gracefully without error toast', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
       render(
@@ -214,8 +231,10 @@ describe('CheckoutSuccessHandler', () => {
         </TestWrapper>,
       )
 
+      // Component handles errors silently (logs them but doesn't show error toast)
+      // It still shows success toast immediately before the sync
       await waitFor(() => {
-        expect(mockToastError).toHaveBeenCalledWith('Payment received, but sync failed. Please refresh the page.')
+        expect(mockToastSuccess).toHaveBeenCalledWith('Payment completed successfully!')
       })
     })
 

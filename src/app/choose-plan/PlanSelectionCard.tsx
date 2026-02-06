@@ -200,6 +200,8 @@ function ProCheckoutButton({
 
   // Initialize Dodo checkout SDK
   useEffect(() => {
+    let mounted = true
+
     if (!isDodoPaymentsEnabled()) {
       setIsCheckoutReady(true) // No checkout needed
       return
@@ -218,13 +220,21 @@ function ProCheckoutButton({
             }
           },
         })
-        setIsCheckoutReady(true)
+        if (mounted) {
+          setIsCheckoutReady(true)
+        }
       } catch (error) {
         clientLogger.error('Failed to initialize checkout:', error)
-        setIsCheckoutReady(true) // Continue anyway
+        if (mounted) {
+          setIsCheckoutReady(true) // Continue anyway
+        }
       }
     }
     initCheckout()
+
+    return () => {
+      mounted = false
+    }
   }, [onLoading])
 
   const handleClick = async () => {

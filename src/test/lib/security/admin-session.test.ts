@@ -318,15 +318,16 @@ describe('Admin Session Management', () => {
       mockAdminUserUpdate.mockResolvedValue({})
     })
 
-    it('should call cookies().set() with "admin_session" as the cookie name', async () => {
+    it('should call cookies().set() twice (clear stale + set new)', async () => {
       const { createAdminSession } = await import('@/lib/security/admin-session')
 
       await createAdminSession(TEST_ADMIN_ID, TEST_USERNAME, TEST_ROLE)
 
-      expect(mockCookieSet).toHaveBeenCalledTimes(1)
-      const firstCall = mockCookieSet.mock.calls[0]
-      expect(firstCall).toBeDefined()
-      expect(firstCall![0]).toBe('admin_session')
+      // First call clears stale cookies on path "/", second call sets the actual cookie on "/admin"
+      expect(mockCookieSet).toHaveBeenCalledTimes(2)
+      const secondCall = mockCookieSet.mock.calls[1]
+      expect(secondCall).toBeDefined()
+      expect(secondCall![0]).toBe('admin_session')
     })
 
     it('should set cookie with path: "/admin"', async () => {
@@ -334,9 +335,10 @@ describe('Admin Session Management', () => {
 
       await createAdminSession(TEST_ADMIN_ID, TEST_USERNAME, TEST_ROLE)
 
-      const firstCall = mockCookieSet.mock.calls[0]
-      expect(firstCall).toBeDefined()
-      const cookieOptions = firstCall![2] as Record<string, unknown>
+      // Second call is the actual session cookie (first call is stale cookie clearing)
+      const secondCall = mockCookieSet.mock.calls[1]
+      expect(secondCall).toBeDefined()
+      const cookieOptions = secondCall![2] as Record<string, unknown>
       expect(cookieOptions.path).toBe('/admin')
     })
 
@@ -345,9 +347,10 @@ describe('Admin Session Management', () => {
 
       await createAdminSession(TEST_ADMIN_ID, TEST_USERNAME, TEST_ROLE)
 
-      const firstCall = mockCookieSet.mock.calls[0]
-      expect(firstCall).toBeDefined()
-      const cookieOptions = firstCall![2] as Record<string, unknown>
+      // Second call is the actual session cookie
+      const secondCall = mockCookieSet.mock.calls[1]
+      expect(secondCall).toBeDefined()
+      const cookieOptions = secondCall![2] as Record<string, unknown>
       expect(cookieOptions.sameSite).toBe('strict')
     })
 
@@ -356,9 +359,10 @@ describe('Admin Session Management', () => {
 
       await createAdminSession(TEST_ADMIN_ID, TEST_USERNAME, TEST_ROLE)
 
-      const firstCall = mockCookieSet.mock.calls[0]
-      expect(firstCall).toBeDefined()
-      const cookieOptions = firstCall![2] as Record<string, unknown>
+      // Second call is the actual session cookie
+      const secondCall = mockCookieSet.mock.calls[1]
+      expect(secondCall).toBeDefined()
+      const cookieOptions = secondCall![2] as Record<string, unknown>
       expect(cookieOptions.httpOnly).toBe(true)
     })
 
@@ -396,9 +400,10 @@ describe('Admin Session Management', () => {
 
       await createAdminSession(TEST_ADMIN_ID, TEST_USERNAME, TEST_ROLE)
 
-      const firstCall = mockCookieSet.mock.calls[0]
-      expect(firstCall).toBeDefined()
-      const token = firstCall![1] as string
+      // Second call is the actual session cookie with JWT token
+      const secondCall = mockCookieSet.mock.calls[1]
+      expect(secondCall).toBeDefined()
+      const token = secondCall![1] as string
       expect(typeof token).toBe('string')
       expect(token.split('.')).toHaveLength(3)
     })
@@ -410,9 +415,10 @@ describe('Admin Session Management', () => {
       await createAdminSession(TEST_ADMIN_ID, TEST_USERNAME, TEST_ROLE)
       const afterCall = Date.now()
 
-      const firstCall = mockCookieSet.mock.calls[0]
-      expect(firstCall).toBeDefined()
-      const cookieOptions = firstCall![2] as Record<string, unknown>
+      // Second call is the actual session cookie
+      const secondCall = mockCookieSet.mock.calls[1]
+      expect(secondCall).toBeDefined()
+      const cookieOptions = secondCall![2] as Record<string, unknown>
       const expiresTime = new Date(cookieOptions.expires as Date).getTime()
 
       // 7.9 hours in milliseconds

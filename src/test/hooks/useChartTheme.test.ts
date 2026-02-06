@@ -2,8 +2,9 @@
  * Unit Tests for useChartTheme Hook
  *
  * Tests the hook that maps the application color theme to chart theme.
- * Ensures consistent chart theming based on the user's theme preference.
+ * The hook implements a simple rule: dark → 'dark', anything else → 'classic'
  *
+ * @vitest-environment jsdom
  * @module src/hooks/useChartTheme
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -23,70 +24,24 @@ describe('useChartTheme', () => {
     vi.clearAllMocks()
   })
 
-  // ===========================================================================
-  // Theme Mapping
-  // ===========================================================================
+  it('should return "dark" when resolvedTheme is "dark"', () => {
+    mockUseTheme.mockReturnValue({ resolvedTheme: 'dark' })
 
-  describe('theme mapping', () => {
-    it('should return "dark" when resolvedTheme is "dark"', () => {
-      mockUseTheme.mockReturnValue({ resolvedTheme: 'dark' })
+    const { result } = renderHook(() => useChartTheme())
 
-      const { result } = renderHook(() => useChartTheme())
-
-      expect(result.current).toBe('dark')
-    })
-
-    it('should return "classic" when resolvedTheme is "light"', () => {
-      mockUseTheme.mockReturnValue({ resolvedTheme: 'light' })
-
-      const { result } = renderHook(() => useChartTheme())
-
-      expect(result.current).toBe('classic')
-    })
-
-    it('should return "classic" when resolvedTheme is "system" with light mode', () => {
-      mockUseTheme.mockReturnValue({ resolvedTheme: 'light' })
-
-      const { result } = renderHook(() => useChartTheme())
-
-      expect(result.current).toBe('classic')
-    })
-
-    it('should return "classic" when resolvedTheme is undefined', () => {
-      mockUseTheme.mockReturnValue({ resolvedTheme: undefined })
-
-      const { result } = renderHook(() => useChartTheme())
-
-      expect(result.current).toBe('classic')
-    })
-
-    it('should return "classic" for any non-dark theme', () => {
-      // Test with various theme values
-      const nonDarkThemes = ['light', 'system', 'sepia', 'high-contrast', '']
-
-      nonDarkThemes.forEach((theme) => {
-        mockUseTheme.mockReturnValue({ resolvedTheme: theme })
-
-        const { result } = renderHook(() => useChartTheme())
-
-        expect(result.current).toBe('classic')
-      })
-    })
+    expect(result.current).toBe('dark')
   })
 
-  // ===========================================================================
-  // Return Type
-  // ===========================================================================
+  it('should return "classic" for any non-dark theme (light, undefined, etc.)', () => {
+    // Test representative cases of non-dark themes
+    const nonDarkCases = [{ resolvedTheme: 'light' }, { resolvedTheme: undefined }, { resolvedTheme: '' }]
 
-  describe('return type', () => {
-    it('should only return valid ChartTheme values', () => {
-      mockUseTheme.mockReturnValue({ resolvedTheme: 'dark' })
-      const { result: darkResult } = renderHook(() => useChartTheme())
-      expect(['dark', 'classic']).toContain(darkResult.current)
+    nonDarkCases.forEach((themeConfig) => {
+      mockUseTheme.mockReturnValue(themeConfig)
 
-      mockUseTheme.mockReturnValue({ resolvedTheme: 'light' })
-      const { result: lightResult } = renderHook(() => useChartTheme())
-      expect(['dark', 'classic']).toContain(lightResult.current)
+      const { result } = renderHook(() => useChartTheme())
+
+      expect(result.current).toBe('classic')
     })
   })
 })

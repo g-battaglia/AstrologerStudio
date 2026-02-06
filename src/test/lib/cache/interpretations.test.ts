@@ -211,6 +211,25 @@ describe('Interpretation Cache', () => {
         expect(result).toBeNull()
       })
 
+      it('should delete expired interpretation entry when accessed', async () => {
+        const chartId = 'expired-chart'
+        await saveInterpretationChunk(chartId, 'Expired content', true)
+
+        // Move beyond 7-day TTL
+        const eightDaysInMs = 8 * 24 * 60 * 60 * 1000
+        const originalDateNow = Date.now
+        vi.spyOn(Date, 'now').mockReturnValue(originalDateNow() + eightDaysInMs)
+
+        const expiredResult = await getInterpretation(chartId)
+        expect(expiredResult).toBeNull()
+
+        vi.restoreAllMocks()
+
+        // If the stale entry was not deleted, this would return data again
+        const afterCleanupResult = await getInterpretation(chartId)
+        expect(afterCleanupResult).toBeNull()
+      })
+
       it('should return saved interpretation', async () => {
         const chartId = 'get-test-chart'
         const content = 'Saved interpretation content'
@@ -254,8 +273,8 @@ describe('Interpretation Cache', () => {
         expect(result).toBeNull()
       })
 
-      it('should not throw when deleting non-existent chart', async () => {
-        await expect(deleteInterpretation('non-existent')).resolves.not.toThrow()
+      it('should resolve when deleting non-existent chart', async () => {
+        await expect(deleteInterpretation('non-existent')).resolves.toBeUndefined()
       })
 
       it('should only delete specified chart', async () => {
@@ -290,8 +309,8 @@ describe('Interpretation Cache', () => {
         expect(result3).toBeNull()
       })
 
-      it('should not throw when clearing empty cache', async () => {
-        await expect(clearAllInterpretations()).resolves.not.toThrow()
+      it('should return success when clearing empty cache', async () => {
+        await expect(clearAllInterpretations()).resolves.toBe(true)
       })
     })
 
@@ -406,7 +425,7 @@ describe('Interpretation Cache', () => {
 
         // Should not throw, just silently fail
         const result = await clearAllInterpretationsWithError()
-        expect(result).toBeUndefined()
+        expect(result).toBe(false)
 
         // Restore original
         indexedDB.open = originalOpen

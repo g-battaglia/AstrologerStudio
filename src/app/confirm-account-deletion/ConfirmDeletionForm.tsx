@@ -41,6 +41,8 @@ export default function ConfirmDeletionForm() {
   }, [])
 
   useEffect(() => {
+    let mounted = true
+
     async function validate() {
       if (!token) {
         setValidationError('No confirmation token provided.')
@@ -49,13 +51,20 @@ export default function ConfirmDeletionForm() {
       }
 
       const result = await validateDeletionToken(token)
-      setIsValid(result.valid)
-      setValidationError(result.error || null)
-      setUsername(result.username || null)
-      setIsValidating(false)
+
+      if (mounted) {
+        setIsValid(result.valid)
+        setValidationError(result.error || null)
+        setUsername(result.username || null)
+        setIsValidating(false)
+      }
     }
 
     validate()
+
+    return () => {
+      mounted = false
+    }
   }, [token])
 
   const handleDelete = async () => {

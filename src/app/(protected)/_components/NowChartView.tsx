@@ -48,8 +48,9 @@ function mapNowChartToSubjectInput(chart: ChartResponse): CreateSubjectInput {
     .map((v) => String(v).padStart(2, '0'))
     .join(':')
 
-  const latitude = subject.latitude
-  const longitude = subject.longitude
+  // Fallback to default location if API doesn't return coordinates
+  const latitude = subject.latitude ?? DEFAULT_NOW_CHART_LOCATION.latitude
+  const longitude = subject.longitude ?? DEFAULT_NOW_CHART_LOCATION.longitude
 
   return {
     name: subject.name || 'Now Chart',

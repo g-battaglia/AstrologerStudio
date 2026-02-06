@@ -48,7 +48,7 @@ describe('createSavedChartSchema', () => {
 
   it('should accept all valid chart types', () => {
     // Verify each chart type is accepted
-    const validTypes = ['natal', 'transit', 'synastry', 'composite', 'solar_return', 'lunar_return']
+    const validTypes = ['natal', 'transit', 'synastry', 'composite', 'solar-return', 'lunar-return']
 
     for (const type of validTypes) {
       const chart = {

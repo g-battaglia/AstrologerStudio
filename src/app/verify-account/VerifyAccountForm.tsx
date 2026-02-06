@@ -17,6 +17,8 @@ export default function VerifyAccountForm() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let mounted = true
+
     async function verify() {
       if (!token) {
         setError('No verification token provided.')
@@ -26,16 +28,22 @@ export default function VerifyAccountForm() {
 
       const result = await verifyAccount(token)
 
-      if (result.error) {
-        setError(result.error)
-      } else {
-        setSuccess(true)
-      }
+      if (mounted) {
+        if (result.error) {
+          setError(result.error)
+        } else {
+          setSuccess(true)
+        }
 
-      setIsVerifying(false)
+        setIsVerifying(false)
+      }
     }
 
     verify()
+
+    return () => {
+      mounted = false
+    }
   }, [token])
 
   // Loading state

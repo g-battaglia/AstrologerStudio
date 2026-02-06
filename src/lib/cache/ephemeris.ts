@@ -1,8 +1,9 @@
 import type { EphemerisArray } from '@/types/ephemeris'
 import { clientLogger } from '@/lib/logging/client'
+import { writeWithQuotaRecovery } from './quota-handler'
 
 const DB_NAME = 'ephemeris-db'
-const DB_VERSION = 1
+const DB_VERSION = 2 // Bumped to ensure index migration runs for existing databases
 const STORE_NAME = 'ephemeris'
 const CACHE_TTL_DAYS = 30 // Cache expires after 30 days
 
@@ -29,12 +30,20 @@ function initDB(): Promise<IDBDatabase> {
     request.onerror = () => reject(request.error)
     request.onsuccess = () => resolve(request.result)
 
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result
+    request.onupgradeneeded = () => {
+      const db = request.result
+      const transaction = request.transaction
 
-      // Create object store if it doesn't exist
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'key' })
+      if (!transaction) {
+        clientLogger.warn('Ephemeris cache upgrade transaction missing')
+        return
+      }
+
+      const store = db.objectStoreNames.contains(STORE_NAME)
+        ? transaction.objectStore(STORE_NAME)
+        : db.createObjectStore(STORE_NAME, { keyPath: 'key' })
+
+      if (!store.indexNames.contains('timestamp')) {
         store.createIndex('timestamp', 'timestamp', { unique: false })
       }
     }
@@ -63,6 +72,20 @@ function isCacheFresh(timestamp: number): boolean {
 }
 
 /**
+ * Delete a cache entry by key
+ */
+function deleteCacheEntry(db: IDBDatabase, key: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite')
+    const store = transaction.objectStore(STORE_NAME)
+    const request = store.delete(key)
+
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+  })
+}
+
+/**
  * Retrieve cached ephemeris data for a date range
  * Returns null if not found or expired
  */
@@ -87,7 +110,13 @@ export async function getCachedEphemeris(startDate: Date, endDate: Date): Promis
         // Check if cache is still fresh
         if (!isCacheFresh(result.timestamp)) {
           clientLogger.debug('Ephemeris cache expired for:', key)
-          resolve(null)
+          deleteCacheEntry(db, key)
+            .catch((deleteError) => {
+              clientLogger.warn('Failed to delete expired ephemeris cache entry', { key, deleteError })
+            })
+            .finally(() => {
+              resolve(null)
+            })
           return
         }
 
@@ -120,18 +149,22 @@ export async function setCachedEphemeris(startDate: Date, endDate: Date, data: E
       version: DB_VERSION,
     }
 
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readwrite')
-      const store = transaction.objectStore(STORE_NAME)
-      const request = store.put(cached)
+    const performWrite = (): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite')
+        const store = transaction.objectStore(STORE_NAME)
+        const request = store.put(cached)
 
-      request.onsuccess = () => {
-        clientLogger.debug('Cached ephemeris data for:', key)
-        resolve()
-      }
+        request.onsuccess = () => {
+          clientLogger.debug('Cached ephemeris data for:', key)
+          resolve()
+        }
 
-      request.onerror = () => reject(request.error)
-    })
+        request.onerror = () => reject(request.error)
+      })
+    }
+
+    await writeWithQuotaRecovery(db, STORE_NAME, performWrite)
   } catch (error) {
     clientLogger.error('Error writing to ephemeris cache:', error)
   }
@@ -140,24 +173,28 @@ export async function setCachedEphemeris(startDate: Date, endDate: Date, data: E
 /**
  * Clear all cached ephemeris data
  */
-export async function clearEphemerisCache(): Promise<void> {
+export async function clearEphemerisCache(): Promise<boolean> {
   try {
     const db = await initDB()
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const transaction = db.transaction(STORE_NAME, 'readwrite')
       const store = transaction.objectStore(STORE_NAME)
       const request = store.clear()
 
       request.onsuccess = () => {
         clientLogger.info('Ephemeris cache cleared')
-        resolve()
+        resolve(true)
       }
 
-      request.onerror = () => reject(request.error)
+      request.onerror = () => {
+        clientLogger.error('Error clearing ephemeris cache:', request.error)
+        resolve(false)
+      }
     })
   } catch (error) {
     clientLogger.error('Error clearing ephemeris cache:', error)
+    return false
   }
 }
 
@@ -193,5 +230,59 @@ export async function getCacheInfo(): Promise<{
   } catch (error) {
     clientLogger.error('Error getting ephemeris cache info:', error)
     return { count: 0, ranges: [] }
+  }
+}
+
+/**
+ * Clean up expired ephemeris entries
+ * Returns the number of entries deleted
+ */
+export async function cleanupExpiredEphemeris(): Promise<number> {
+  try {
+    const db = await initDB()
+    const now = Date.now()
+    const maxAge = CACHE_TTL_DAYS * 24 * 60 * 60 * 1000
+    const expiryThreshold = now - maxAge
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite')
+      const store = transaction.objectStore(STORE_NAME)
+
+      if (!store.indexNames.contains('timestamp')) {
+        clientLogger.warn('Timestamp index missing in ephemeris cache, skipping expired-entry cleanup')
+        resolve(0)
+        return
+      }
+
+      const index = store.index('timestamp')
+
+      // Get all entries with timestamp less than threshold (expired)
+      const range = IDBKeyRange.upperBound(expiryThreshold)
+      const request = index.openCursor(range)
+
+      let deletedCount = 0
+
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result
+        if (cursor) {
+          cursor.delete()
+          deletedCount++
+          cursor.continue()
+        } else {
+          if (deletedCount > 0) {
+            clientLogger.info(`Cleaned up ${deletedCount} expired ephemeris entries`)
+          }
+          resolve(deletedCount)
+        }
+      }
+
+      request.onerror = () => {
+        clientLogger.error('Error cleaning up ephemeris cache:', request.error)
+        resolve(0)
+      }
+    })
+  } catch (error) {
+    clientLogger.error('Error cleaning up ephemeris cache:', error)
+    return 0
   }
 }

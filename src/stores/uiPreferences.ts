@@ -2,6 +2,62 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 /**
+ * Maximum entries to prevent unbounded memory growth
+ */
+const MAX_COLLAPSED_ENTRIES = 200
+const MAX_LAYOUT_ENTRIES = 100
+
+function upsertCollapsedPreference(
+  collapsedState: Partial<Record<ComponentId, boolean>>,
+  componentId: ComponentId,
+  collapsed: boolean,
+): Partial<Record<ComponentId, boolean>> {
+  const nextCollapsed = { ...collapsedState }
+
+  // Delete first to reinsert and keep this key as most recently updated
+  if (componentId in nextCollapsed) {
+    delete nextCollapsed[componentId]
+  }
+
+  nextCollapsed[componentId] = collapsed
+
+  const keys = Object.keys(nextCollapsed)
+  if (keys.length > MAX_COLLAPSED_ENTRIES) {
+    const oldestKey = keys[0]
+    if (oldestKey) {
+      delete nextCollapsed[oldestKey]
+    }
+  }
+
+  return nextCollapsed
+}
+
+function upsertLayoutPreference(
+  layoutState: Record<string, string[]>,
+  containerId: string,
+  items: string[],
+): Record<string, string[]> {
+  const nextLayout = { ...layoutState }
+
+  // Delete first to reinsert and keep this key as most recently updated
+  if (containerId in nextLayout) {
+    delete nextLayout[containerId]
+  }
+
+  nextLayout[containerId] = items
+
+  const keys = Object.keys(nextLayout)
+  if (keys.length > MAX_LAYOUT_ENTRIES) {
+    const oldestKey = keys[0]
+    if (oldestKey) {
+      delete nextLayout[oldestKey]
+    }
+  }
+
+  return nextLayout
+}
+
+/**
  * Component IDs for UI preferences
  * Each collapsible card/section should have a unique ID
  */
@@ -46,26 +102,31 @@ export type UIPreferencesState = {
 
 export const useUIPreferences = create<UIPreferencesState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       collapsed: {},
       layout: {},
 
       setCollapsed: (componentId, collapsed) =>
-        set((state) => ({
-          collapsed: { ...state.collapsed, [componentId]: collapsed },
-        })),
+        set((state) => {
+          return {
+            collapsed: upsertCollapsedPreference(state.collapsed, componentId, collapsed),
+          }
+        }),
 
-      toggleCollapsed: (componentId) => {
-        const current = get().collapsed[componentId] ?? false
-        set((state) => ({
-          collapsed: { ...state.collapsed, [componentId]: !current },
-        }))
-      },
+      toggleCollapsed: (componentId) =>
+        set((state) => {
+          const current = state.collapsed[componentId] ?? false
+          return {
+            collapsed: upsertCollapsedPreference(state.collapsed, componentId, !current),
+          }
+        }),
 
       updateLayout: (containerId, items) =>
-        set((state) => ({
-          layout: { ...state.layout, [containerId]: items },
-        })),
+        set((state) => {
+          return {
+            layout: upsertLayoutPreference(state.layout, containerId, items),
+          }
+        }),
 
       moveItem: (activeId, overId, activeContainer, overContainer) => {
         set((state) => {

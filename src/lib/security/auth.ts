@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db/prisma'
 // In-memory cache to throttle lastActiveAt updates (5 min = 300000ms)
 // This prevents excessive database writes while still tracking user activity
 const ACTIVITY_UPDATE_THROTTLE_MS = 5 * 60 * 1000
+const MAX_ACTIVITY_CACHE_ENTRIES = 10_000
 const lastActivityUpdateCache = new Map<string, number>()
 
 /**
@@ -88,6 +89,13 @@ export async function withAuth<T>(fn: (session: AuthSession) => Promise<T>): Pro
   const now = Date.now()
   const lastUpdate = lastActivityUpdateCache.get(session.userId) || 0
   if (now - lastUpdate > ACTIVITY_UPDATE_THROTTLE_MS) {
+    // Enforce max entries to prevent unbounded memory growth (FIFO eviction)
+    if (lastActivityUpdateCache.size >= MAX_ACTIVITY_CACHE_ENTRIES) {
+      const oldestKey = lastActivityUpdateCache.keys().next().value
+      if (oldestKey) {
+        lastActivityUpdateCache.delete(oldestKey)
+      }
+    }
     lastActivityUpdateCache.set(session.userId, now)
     // Fire-and-forget update (don't await to avoid blocking the request)
     prisma.user

@@ -1,8 +1,33 @@
 import { clientLogger } from '@/lib/logging/client'
+import { writeWithQuotaRecovery } from './quota-handler'
 
 const DB_NAME = 'interpretations-db'
-const DB_VERSION = 1
+const DB_VERSION = 2 // Bumped to ensure index migration runs for existing databases
 const STORE_NAME = 'interpretations'
+
+/** Cache TTL in milliseconds (7 days) */
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * Check if cached data is still fresh
+ */
+function isCacheFresh(timestamp: number): boolean {
+  return Date.now() - timestamp < CACHE_TTL_MS
+}
+
+/**
+ * Delete a cache entry by chart ID
+ */
+function deleteCacheEntry(db: IDBDatabase, chartId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite')
+    const store = transaction.objectStore(STORE_NAME)
+    const request = store.delete(chartId)
+
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+  })
+}
 
 interface CachedInterpretation {
   chartId: string
@@ -25,12 +50,20 @@ function initDB(): Promise<IDBDatabase> {
     request.onerror = () => reject(request.error)
     request.onsuccess = () => resolve(request.result)
 
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result
+    request.onupgradeneeded = () => {
+      const db = request.result
+      const transaction = request.transaction
 
-      // Create object store if it doesn't exist
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'chartId' })
+      if (!transaction) {
+        clientLogger.warn('Interpretation cache upgrade transaction missing')
+        return
+      }
+
+      const store = db.objectStoreNames.contains(STORE_NAME)
+        ? transaction.objectStore(STORE_NAME)
+        : db.createObjectStore(STORE_NAME, { keyPath: 'chartId' })
+
+      if (!store.indexNames.contains('timestamp')) {
         store.createIndex('timestamp', 'timestamp', { unique: false })
       }
     }
@@ -76,18 +109,22 @@ export async function saveInterpretationChunk(chartId: string, content: string, 
       isComplete,
     }
 
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readwrite')
-      const store = transaction.objectStore(STORE_NAME)
-      const request = store.put(cached)
+    const performWrite = (): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite')
+        const store = transaction.objectStore(STORE_NAME)
+        const request = store.put(cached)
 
-      request.onsuccess = () => {
-        clientLogger.debug('Saved interpretation chunk for:', chartId)
-        resolve()
-      }
+        request.onsuccess = () => {
+          clientLogger.debug('Saved interpretation chunk for:', chartId)
+          resolve()
+        }
 
-      request.onerror = () => reject(request.error)
-    })
+        request.onerror = () => reject(request.error)
+      })
+    }
+
+    await writeWithQuotaRecovery(db, STORE_NAME, performWrite)
   } catch (error) {
     clientLogger.error('Error saving interpretation chunk:', error)
   }
@@ -111,6 +148,19 @@ export async function getInterpretation(chartId: string): Promise<CachedInterpre
 
         if (!result) {
           resolve(null)
+          return
+        }
+
+        // Check if cache entry has expired
+        if (!isCacheFresh(result.timestamp)) {
+          clientLogger.debug('Interpretation cache expired for:', chartId)
+          deleteCacheEntry(db, chartId)
+            .catch((deleteError) => {
+              clientLogger.warn('Failed to delete expired interpretation cache entry', { chartId, deleteError })
+            })
+            .finally(() => {
+              resolve(null)
+            })
           return
         }
 
@@ -153,23 +203,80 @@ export async function deleteInterpretation(chartId: string): Promise<void> {
 /**
  * Clear all cached interpretations
  */
-export async function clearAllInterpretations(): Promise<void> {
+export async function clearAllInterpretations(): Promise<boolean> {
   try {
     const db = await initDB()
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const transaction = db.transaction(STORE_NAME, 'readwrite')
       const store = transaction.objectStore(STORE_NAME)
       const request = store.clear()
 
       request.onsuccess = () => {
         clientLogger.info('Interpretation cache cleared')
-        resolve()
+        resolve(true)
       }
 
-      request.onerror = () => reject(request.error)
+      request.onerror = () => {
+        clientLogger.error('Error clearing interpretation cache:', request.error)
+        resolve(false)
+      }
     })
   } catch (error) {
     clientLogger.error('Error clearing interpretation cache:', error)
+    return false
+  }
+}
+
+/**
+ * Clean up expired interpretation entries
+ * Returns the number of entries deleted
+ */
+export async function cleanupExpiredInterpretations(): Promise<number> {
+  try {
+    const db = await initDB()
+    const now = Date.now()
+    const expiryThreshold = now - CACHE_TTL_MS
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite')
+      const store = transaction.objectStore(STORE_NAME)
+
+      if (!store.indexNames.contains('timestamp')) {
+        clientLogger.warn('Timestamp index missing in interpretation cache, skipping expired-entry cleanup')
+        resolve(0)
+        return
+      }
+
+      const index = store.index('timestamp')
+
+      // Get all entries with timestamp less than threshold (expired)
+      const range = IDBKeyRange.upperBound(expiryThreshold)
+      const request = index.openCursor(range)
+
+      let deletedCount = 0
+
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result
+        if (cursor) {
+          cursor.delete()
+          deletedCount++
+          cursor.continue()
+        } else {
+          if (deletedCount > 0) {
+            clientLogger.info(`Cleaned up ${deletedCount} expired interpretation entries`)
+          }
+          resolve(deletedCount)
+        }
+      }
+
+      request.onerror = () => {
+        clientLogger.error('Error cleaning up interpretation cache:', request.error)
+        resolve(0)
+      }
+    })
+  } catch (error) {
+    clientLogger.error('Error cleaning up interpretation cache:', error)
+    return 0
   }
 }

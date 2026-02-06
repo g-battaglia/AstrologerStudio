@@ -5,6 +5,7 @@ export type SidebarState = {
   open: boolean
   setOpen: (open: boolean) => void
   toggle: () => void
+  reset: () => void
 }
 
 export const useSidebarStore = create<SidebarState>()(
@@ -13,6 +14,7 @@ export const useSidebarStore = create<SidebarState>()(
       open: true,
       setOpen: (open) => set({ open }),
       toggle: () => set({ open: !get().open }),
+      reset: () => set({ open: true }),
     }),
     { name: 'sidebar-state' },
   ),

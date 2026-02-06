@@ -55,8 +55,8 @@ describe('ChartViewWrapper', () => {
         </ChartViewWrapper>,
       )
 
-      // Should have the container with space-y-8 class
-      const container = document.querySelector('.space-y-8')
+      // Should have the container with space-y-4 class
+      const container = document.querySelector('.space-y-4')
       expect(container).toBeInTheDocument()
     })
   })

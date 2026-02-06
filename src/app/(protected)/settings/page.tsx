@@ -16,6 +16,7 @@ import {
 } from '@/components/settings/ChartSettingsPanel'
 import { AISettingsPanel } from '@/components/settings/AISettingsPanel'
 import { PDFBrandingSettings } from '@/components/settings/PDFBrandingSettings'
+import { ClearCacheCard } from '@/components/settings/ClearCacheCard'
 import { getChartPreferences, updateChartPreferences, type ChartPreferencesData } from '@/actions/preferences'
 import { toast } from 'sonner'
 import { Loader2, Save, RotateCcw, Palette, Calculator, Star, Sparkles, User } from 'lucide-react'
@@ -227,6 +228,7 @@ export default function SettingsPage() {
             <div id="pdf-branding">
               <PDFBrandingSettings />
             </div>
+            <ClearCacheCard />
           </TabsContent>
 
           <TabsContent value="calculation" className="space-y-4">

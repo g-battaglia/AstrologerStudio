@@ -1,7 +1,7 @@
 'use client'
 
 import { ChartErrorState } from '@/components/ChartErrorState'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTheme } from '@/components/ThemeProvider'
 import { getSavedChartData, type SavedChartDataResult } from '@/actions/saved-charts'
 import type {
@@ -55,17 +55,42 @@ export function SavedChartViewer({ chartName, chartParams, savedChartId, initial
   const hasModifiedParams =
     JSON.stringify(currentParams) !== JSON.stringify(lastSavedParams) || notes !== lastSavedNotes
 
-  // Fetch chart data when params or theme changes
-  const fetchData = useCallback(() => {
-    setIsLoading(true)
-    getSavedChartData(currentParams, chartTheme)
-      .then(setResult)
-      .finally(() => setIsLoading(false))
-  }, [currentParams, chartTheme])
+  // Refs to guard async state updates across unmounts and stale requests
+  const isMountedRef = useRef(true)
+  const latestRequestIdRef = useRef(0)
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    isMountedRef.current = true
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  const loadData = useCallback(async () => {
+    const requestId = ++latestRequestIdRef.current
+    setIsLoading(true)
+    try {
+      const data = await getSavedChartData(currentParams, chartTheme)
+      if (isMountedRef.current && requestId === latestRequestIdRef.current) {
+        setResult(data)
+      }
+    } finally {
+      if (isMountedRef.current && requestId === latestRequestIdRef.current) {
+        setIsLoading(false)
+      }
+    }
+  }, [currentParams, chartTheme])
+
+  // Fetch chart data when params or theme changes
+  useEffect(() => {
+    void loadData()
+  }, [loadData])
+
+  // fetchData callback for retry button
+  const fetchData = useCallback(() => {
+    void loadData()
+  }, [loadData])
 
   // Handle time navigator updates for transit charts
   const handleTransitTimeChange = useCallback(

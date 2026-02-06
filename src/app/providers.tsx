@@ -2,12 +2,13 @@
 
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useEffect } from 'react'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from '@/components/ui/sonner'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { clientLogger } from '@/lib/logging/client'
 import { STALE_TIME, GC_TIME } from '@/lib/config/query'
+import { cleanupExpiredCaches } from '@/lib/cache/cleanup'
 
 /**
  * Global error handler for React Query mutations
@@ -72,6 +73,11 @@ export function Providers({ children }: { children: ReactNode }) {
         },
       }),
   )
+
+  // Run cache cleanup once on app startup
+  useEffect(() => {
+    cleanupExpiredCaches()
+  }, [])
 
   return (
     <ErrorBoundary>
