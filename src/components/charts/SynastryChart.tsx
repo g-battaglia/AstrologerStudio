@@ -26,7 +26,7 @@ interface SynastryChartProps {
   initialNotes?: string
   notes?: string
   onNotesChange?: (notes: string) => void
-  /** Override chart type for AI interpretation (e.g., 'solar_return', 'lunar_return') */
+  /** Override chart type for AI interpretation (e.g., 'solar-return', 'lunar-return') */
   chartTypeOverride?: string
   subject1DateLabel?: string
   subject2DateLabel?: string
@@ -119,9 +119,9 @@ export function SynastryChart({
             className="h-fit w-full"
             dateLabel={subject2DateLabel}
             title={
-              chartTypeOverride === 'solar_return'
+              chartTypeOverride === 'solar-return'
                 ? 'Solar Return'
-                : chartTypeOverride === 'lunar_return'
+                : chartTypeOverride === 'lunar-return'
                   ? 'Lunar Return'
                   : undefined
             }
@@ -135,9 +135,9 @@ export function SynastryChart({
             className="h-fit w-full"
             projectedPoints={chart_data.house_comparison?.second_points_in_first_houses}
             title={
-              chartTypeOverride === 'solar_return'
+              chartTypeOverride === 'solar-return'
                 ? 'Solar Return Points'
-                : chartTypeOverride === 'lunar_return'
+                : chartTypeOverride === 'lunar-return'
                   ? 'Lunar Return Points'
                   : `${subject2Data.chart_data.subject.name} Points`
             }

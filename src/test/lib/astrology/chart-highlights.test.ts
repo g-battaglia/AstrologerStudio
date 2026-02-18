@@ -647,12 +647,14 @@ describe('normalizeChartType', () => {
     expect(normalizeChartType('solar return')).toBe('solar return')
     expect(normalizeChartType('Solar Return')).toBe('solar return')
     expect(normalizeChartType('solar_return')).toBe('solar return')
+    expect(normalizeChartType('solar-return')).toBe('solar return')
   })
 
   it('should normalize lunar return chart types', () => {
     expect(normalizeChartType('lunar return')).toBe('lunar return')
     expect(normalizeChartType('Lunar Return')).toBe('lunar return')
     expect(normalizeChartType('lunar_return')).toBe('lunar return')
+    expect(normalizeChartType('lunar-return')).toBe('lunar return')
   })
 
   it('should handle generic return as solar return', () => {

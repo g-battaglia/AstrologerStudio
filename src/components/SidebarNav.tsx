@@ -42,6 +42,7 @@ import { isDodoPaymentsEnabled } from '@/lib/subscription/config'
 export type NavItem = {
   icon: React.ComponentType<{ className?: string }>
   label: string
+  description?: string // Tooltip description
   to: string
   external?: boolean
   badge?: string | number
@@ -62,22 +63,90 @@ const defaultGroups: NavGroup[] = [
   {
     title: 'Workspace',
     items: [
-      { icon: Home, label: 'Home', to: '/dashboard' },
-      { icon: Users, label: 'Subjects', to: '/subjects' },
-      { icon: FolderHeart, label: 'Saved Calculations', to: '/saved-calculations' },
-      { icon: Table2, label: 'Ephemeris', to: '/ephemeris' },
-      { icon: Calendar, label: 'Timeline', to: '#', action: 'timeline', isPro: true },
+      {
+        icon: Home,
+        label: 'Home',
+        description: 'Current sky chart with real-time planetary positions',
+        to: '/dashboard',
+      },
+      {
+        icon: Users,
+        label: 'Subjects',
+        description: 'Manage your clients and saved birth data',
+        to: '/subjects',
+      },
+      {
+        icon: FolderHeart,
+        label: 'Saved Calculations',
+        description: 'Access your saved charts and analyses',
+        to: '/saved-calculations',
+      },
+      {
+        icon: Table2,
+        label: 'Ephemeris',
+        description: 'Daily planetary positions table',
+        to: '/ephemeris',
+      },
+      {
+        icon: Calendar,
+        label: 'Transits Timeline',
+        description: 'Visual timeline of planetary transits over time',
+        to: '#',
+        action: 'timeline',
+        isPro: true,
+      },
     ],
   },
   {
     title: 'Charts',
     items: [
-      { icon: User, label: 'Natal Chart', to: '#', action: 'natal' },
-      { icon: Activity, label: 'Transits', to: '#', action: 'transits', isPro: true },
-      { icon: GitMerge, label: 'Synastry', to: '#', action: 'synastry', isPro: true },
-      { icon: GitCommit, label: 'Composite', to: '#', action: 'composite', isPro: true },
-      { icon: Sun, label: 'Solar Return', to: '#', action: 'solar-return', isPro: true },
-      { icon: Moon, label: 'Lunar Return', to: '#', action: 'lunar-return', isPro: true },
+      {
+        icon: User,
+        label: 'Natal Chart',
+        description: 'Birth chart with planetary positions',
+        to: '#',
+        action: 'natal',
+      },
+      {
+        icon: Activity,
+        label: 'Transits',
+        description: 'Current transits overlaid on natal chart',
+        to: '#',
+        action: 'transits',
+        isPro: true,
+      },
+      {
+        icon: GitMerge,
+        label: 'Synastry',
+        description: 'Relationship compatibility between two charts',
+        to: '#',
+        action: 'synastry',
+        isPro: true,
+      },
+      {
+        icon: GitCommit,
+        label: 'Composite',
+        description: 'Combined midpoint chart for relationships',
+        to: '#',
+        action: 'composite',
+        isPro: true,
+      },
+      {
+        icon: Sun,
+        label: 'Solar Return',
+        description: 'Annual chart based on Sun return to natal position',
+        to: '#',
+        action: 'solar-return',
+        isPro: true,
+      },
+      {
+        icon: Moon,
+        label: 'Lunar Return',
+        description: 'Monthly chart based on Moon return to natal position',
+        to: '#',
+        action: 'lunar-return',
+        isPro: true,
+      },
     ],
   },
   {
@@ -86,14 +155,21 @@ const defaultGroups: NavGroup[] = [
       {
         icon: Settings,
         label: 'Settings',
+        description: 'Customize chart preferences and account',
         to: '/settings',
       },
       {
         icon: HelpCircle,
         label: 'User Manual',
+        description: 'Documentation and help guides',
         to: '/manual',
       },
-      { icon: ShieldCheck, label: 'Policies', to: '/legal' },
+      {
+        icon: ShieldCheck,
+        label: 'Policies',
+        description: 'Privacy policy and terms of service',
+        to: '/legal',
+      },
     ],
   },
 ]
@@ -149,7 +225,7 @@ export function SidebarNav({ groups = defaultGroups }: SidebarNavProps) {
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.label}>
                     {item.external ? (
-                      <SidebarMenuButton asChild tooltip={item.label}>
+                      <SidebarMenuButton asChild tooltip={item.description || item.label} showTooltipWhenExpanded>
                         <a
                           href={item.to}
                           target="_blank"
@@ -163,7 +239,12 @@ export function SidebarNav({ groups = defaultGroups }: SidebarNavProps) {
                     ) : (
                       <SidebarMenuButton
                         asChild={!(item.isPro && isFreeUser)}
-                        tooltip={item.isPro && isFreeUser ? `${item.label} (Pro)` : item.label}
+                        tooltip={
+                          item.isPro && isFreeUser
+                            ? `${item.description || item.label} (Pro feature)`
+                            : item.description || item.label
+                        }
+                        showTooltipWhenExpanded
                         isActive={isActive(item.to)}
                         onClick={(e) => handleItemClick(e, item)}
                         className={cn(item.isPro && isFreeUser && 'opacity-50 cursor-not-allowed')}

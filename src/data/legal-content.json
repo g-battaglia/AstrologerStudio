@@ -1,7 +1,7 @@
 {
   "privacy": {
     "title": "Privacy Policy",
-    "lastUpdated": "January 14, 2026",
+    "lastUpdated": "February 18, 2026",
     "intro": [
       "Welcome to Astrologer Studio. We respect your privacy and are committed to protecting your personal data.",
       "This Privacy Policy explains how Astrologer Studio (\"we\", \"us\", \"our\") collects, uses, discloses, and protects information when you access or use our website, applications, and services (collectively, the \"Service\"). Where the EU General Data Protection Regulation (GDPR) applies, we act as the data controller for the processing described in this Policy."
@@ -93,15 +93,15 @@
         "list": [
           {
             "label": "Service Providers (Processors)",
-            "text": "Hosting, content delivery, database infrastructure, logging/monitoring, email delivery, customer support tools, and analytics providers. They process data on our behalf under contractual confidentiality and security obligations."
+            "text": "Hosting, content delivery, database infrastructure, logging/monitoring, email delivery, customer support tools, and analytics providers. They process data on our behalf under contractual confidentiality and security obligations. See Section 4a below for the current list of specific sub-processors."
           },
           {
             "label": "AI Model Providers (Processors)",
-            "text": "We use third-party AI providers (such as OpenAI or similar services) to process chart data and generate text interpretations. We direct these providers not to use your data to train their models."
+            "text": "We route AI interpretation requests through OpenRouter (openrouter.ai), which may forward them to underlying model providers (such as DeepSeek, OpenAI, Anthropic, or Google, depending on the model selected). We direct these providers not to use your data to train their models."
           },
           {
             "label": "Payments (Dodo Payments as Merchant of Record)",
-            "text": "When you purchase a subscription, Dodo Payments processes payment and billing data as Merchant of Record and is responsible for payment compliance, taxes, refunds, and chargebacks under its own terms of service and privacy policy. We receive limited transaction information needed to provision your subscription."
+            "text": "When you purchase a subscription, Dodo Payments (dodopayments.com) processes payment and billing data as Merchant of Record and is responsible for payment compliance, taxes, refunds, and chargebacks under its own terms of service and privacy policy. We receive limited transaction information needed to provision your subscription."
           },
           {
             "label": "Legal and Safety",
@@ -114,6 +114,50 @@
         ]
       },
       {
+        "title": "4a. Third-Party Sub-Processors",
+        "content": [
+          "The following is the current list of third-party services that process personal data on our behalf or as independent controllers. This list may be updated from time to time as the Service evolves."
+        ],
+        "list": [
+          {
+            "label": "Hosting and Infrastructure",
+            "text": "Railway Corp. (railway.app) \u2014 Application hosting and container orchestration. Servers located in the US and EEA regions depending on deployment configuration."
+          },
+          {
+            "label": "Database",
+            "text": "PostgreSQL hosted via managed database services. Connection details and region depend on the deployment configuration."
+          },
+          {
+            "label": "Payments",
+            "text": "Dodo Payments (dodopayments.com) \u2014 Merchant of Record for subscription billing, tax handling, refunds, and chargebacks."
+          },
+          {
+            "label": "AI Interpretations",
+            "text": "OpenRouter (openrouter.ai) \u2014 API gateway for AI model access. Underlying model providers may include DeepSeek, OpenAI, Anthropic, or Google depending on configuration."
+          },
+          {
+            "label": "Geocoding and Location Lookup",
+            "text": "GeoNames (geonames.org) \u2014 Used to resolve city names, coordinates, and timezones from birth place data entered by users."
+          },
+          {
+            "label": "Email (Transactional)",
+            "text": "SMTP-based email delivery (currently Zoho Mail) \u2014 Used to send password reset emails, account verification, and service notifications. We do not use your email for marketing unless you have opted in."
+          },
+          {
+            "label": "Analytics",
+            "text": "Umami (umami.is) \u2014 Privacy-focused, cookieless web analytics. Umami does not collect personal data, does not use cookies, and does not track users across sites. Analytics can be disabled entirely by the instance operator."
+          },
+          {
+            "label": "Anti-Abuse",
+            "text": "Google reCAPTCHA (google.com/recaptcha) \u2014 Used during registration and sensitive actions to prevent automated abuse. Google may set cookies and collect usage data subject to Google\u2019s Privacy Policy."
+          },
+          {
+            "label": "CDN and Static Assets",
+            "text": "Statically CDN (statically.io) \u2014 Used to deliver static image assets."
+          }
+        ]
+      },
+      {
         "title": "5. International Data Transfers",
         "content": [
           "We may process and store information in the EEA and other countries. Where we transfer personal data from the EEA/UK/Switzerland to countries that do not provide an equivalent level of protection, we rely on appropriate safeguards such as European Commission adequacy decisions or Standard Contractual Clauses, and where relevant additional measures."
@@ -122,8 +166,33 @@
       {
         "title": "6. Data Retention",
         "content": [
-          "We retain personal data only for as long as necessary for the purposes described in this Policy. Retention periods vary based on the type of data, the purpose for processing, and legal requirements.",
-          "Account and chart data is generally retained until you delete it or close your account, subject to limited retention for backups, fraud prevention, and legal compliance. Billing and tax records may be retained longer where required by law."
+          "We retain personal data only for as long as necessary for the purposes described in this Policy. The specific retention periods are as follows:"
+        ],
+        "list": [
+          {
+            "label": "Account Data (name, email, preferences)",
+            "text": "Retained for as long as your account is active. Upon account deletion or closure request, account data is permanently deleted from our production databases within 30 days."
+          },
+          {
+            "label": "Astrological Chart Data (birth date, birth time, birth place, saved charts)",
+            "text": "Retained for as long as your account is active. You may delete individual subjects and charts at any time. Upon account deletion, all chart data is permanently deleted within 30 days."
+          },
+          {
+            "label": "AI Interpretation Cache",
+            "text": "Cached AI-generated interpretations are automatically purged after 24 hours or when the cache is invalidated, whichever comes first."
+          },
+          {
+            "label": "Billing and Transaction Records",
+            "text": "Retained for as long as required by applicable tax and accounting laws (typically up to 10 years in the EU) even after account deletion, as mandated by law. These records are managed by Dodo Payments as Merchant of Record."
+          },
+          {
+            "label": "Server Logs and Security Data",
+            "text": "IP addresses, error logs, and security event logs are retained for up to 90 days for security monitoring and abuse prevention, then automatically deleted."
+          },
+          {
+            "label": "Backups",
+            "text": "Encrypted backups that may contain personal data are rotated and permanently deleted within 30 days of creation. After account deletion, your data will be purged from all backup cycles within this 30-day window."
+          }
         ]
       },
       {
@@ -198,7 +267,7 @@
   },
   "terms": {
     "title": "Terms of Service",
-    "lastUpdated": "January 15, 2026",
+    "lastUpdated": "February 18, 2026",
     "intro": [
       "Please read these Terms of Service (\"Terms\") carefully before using Astrologer Studio (the \"Service\"). By accessing or using the Service, you agree to be bound by these Terms.",
       "If you do not agree to these Terms, do not use the Service. If you use the Service on behalf of a company or other entity, you represent that you have authority to bind that entity to these Terms."
@@ -233,7 +302,7 @@
           },
           {
             "label": "Refunds and Right of Withdrawal (Consumers)",
-            "text": "Refunds are handled in line with Dodo Payments’s policies and applicable consumer protection laws. If you are a consumer in the EEA/UK, you may have a 14-day right of withdrawal for distance contracts. However, for digital content or digital services, you may lose this right if performance begins immediately after your prior express request and acknowledgement. Where required, we and Dodo Payments will request the necessary consent and acknowledgement at checkout."
+            "text": "Refunds are handled in line with Dodo Payments’s policies and applicable consumer protection laws. If you are a consumer in the EEA/UK, you have a 14-day right of withdrawal for distance contracts. However, because Astrologer Studio is a digital service that begins performing immediately upon account activation or subscription purchase, you expressly request that the Service begins before the withdrawal period has expired and you acknowledge that you will therefore lose your right of withdrawal once the Service has started (for example, when you generate your first chart, access chart data, or use any core feature). This consent and acknowledgement are requested at checkout as required by EU Directive 2011/83/EU. Notwithstanding the above, we offer a voluntary 30-day money-back guarantee as described in our Refund Policy."
           }
         ]
       },
@@ -287,46 +356,55 @@
       {
         "title": "7. Astrology Disclaimer",
         "content": [
-          "Astrologer Studio provides astrological charts and interpretations for informational and entertainment purposes. Outputs are generated based on the data you provide and the methodologies implemented in the software.",
-          "The Service does not provide medical, psychological, legal, or financial advice. You are responsible for how you interpret and use the outputs."
+          "Astrology is not an exact science. The charts, calculations, transit forecasts, and AI-generated interpretations provided by Astrologer Studio are intended exclusively for entertainment, personal research, and educational purposes. Outputs are generated based on the data you provide and the astrological methodologies implemented in the software, and they do not constitute verified, scientifically proven, or objectively reliable information.",
+          "The Service does not provide medical, psychological, legal, or financial advice. By using the Service, you expressly acknowledge and agree that you will not base any medical, financial, legal, or psychological decision on the outputs of the Service. You assume full responsibility for how you interpret and use the outputs."
         ]
       },
       {
-        "title": "8. Service Availability and Changes",
+        "title": "8. Disclaimer of Warranties",
         "content": [
-          "We strive to keep the Service available, but we do not guarantee uninterrupted access. The Service may be temporarily unavailable due to maintenance, updates, or circumstances beyond our reasonable control.",
+          "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SERVICE IS PROVIDED \"AS IS\" AND \"AS AVAILABLE\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, OR NON-INFRINGEMENT.",
+          "Without limiting the foregoing, we do not warrant that: (a) the Service will be uninterrupted, timely, secure, or error-free; (b) the astrological calculations, charts, ephemeris data, or AI-generated interpretations will be accurate, complete, or free from computational errors or bugs; (c) any defects or errors in the Service will be corrected; or (d) the results obtained from the Service will meet your expectations. You acknowledge that software may contain bugs and that astrological calculations may vary depending on the algorithms, data sources, and methodologies used.",
+          "Nothing in this section excludes or limits mandatory warranties that cannot be excluded or limited under applicable consumer protection law."
+        ]
+      },
+      {
+        "title": "9. Service Availability and Changes",
+        "content": [
+          "We strive to keep the Service available, but we do not guarantee uninterrupted access. The Service may be temporarily unavailable due to maintenance, updates, or circumstances beyond our reasonable control. We are not liable for any damages arising from service interruptions, temporary data unavailability, or downtime.",
           "We may modify, suspend, or discontinue parts of the Service. If you have a paid subscription and a change materially reduces core functionality, you may have additional rights under applicable law."
         ]
       },
       {
-        "title": "9. Termination",
+        "title": "10. Termination and Account Suspension",
         "content": [
           "You may stop using the Service at any time and may delete your account where the feature is available. If you delete your account, subscription billing must also be canceled to stop future charges.",
-          "We may suspend or terminate your access to the Service if you materially breach these Terms, if required by law, or to protect the security of the Service. Where reasonable, we will provide notice and an opportunity to remedy."
+          "We may suspend or terminate your access to the Service if you materially breach these Terms, if required by law, or to protect the security of the Service. Where reasonable, we will provide notice and an opportunity to remedy.",
+          "Notwithstanding the above, we reserve the right to immediately suspend or permanently terminate your account without prior notice in the event of: (a) attempted or actual unauthorized access to our systems, networks, or other users' data; (b) denial-of-service attacks, port scanning, or any other form of cyber attack directed at the Service; (c) fraudulent use of the Service, including but not limited to payment fraud or identity misrepresentation; (d) sharing, reselling, or unauthorized distribution of account credentials; or (e) any activity that, in our sole reasonable judgment, poses an immediate threat to the security, integrity, or availability of the Service or the data of other users."
         ]
       },
       {
-        "title": "10. Limitation of Liability",
+        "title": "11. Limitation of Liability",
         "content": [
           "To the maximum extent permitted by law, Astrologer Studio will not be liable for any indirect, incidental, special, consequential, or punitive damages, or for any loss of profits, revenue, data, goodwill, or other intangible losses, arising out of or related to your use of or inability to use the Service.",
           "Nothing in these Terms excludes or limits liability that cannot be excluded or limited under applicable law, including for death or personal injury caused by negligence, fraud, or certain statutory consumer rights."
         ]
       },
       {
-        "title": "11. Indemnification",
+        "title": "12. Indemnification",
         "content": [
           "You agree to indemnify and hold Astrologer Studio harmless from and against claims, liabilities, damages, losses, and expenses (including reasonable legal fees) arising out of or related to your misuse of the Service, your violation of these Terms, or your User Content, including your use of third-party personal data without a lawful basis."
         ]
       },
       {
-        "title": "12. Governing Law and Dispute Resolution",
+        "title": "13. Governing Law and Dispute Resolution",
         "content": [
           "These Terms are governed by the laws of the jurisdiction where we are established, as stated in the Service’s legal notice, without regard to conflict of laws rules.",
           "If you are a consumer in the EEA/UK, you may benefit from mandatory consumer protection laws in your country of residence and you may generally bring claims in your local courts. If you are not a consumer, disputes will be resolved in the competent courts where we are established, unless applicable law provides otherwise."
         ]
       },
       {
-        "title": "13. Changes to These Terms",
+        "title": "14. Changes to These Terms",
         "content": [
           "We may update these Terms from time to time. We will post the updated Terms and update the \"Last Updated\" date. If changes are material, we will provide additional notice where required. By continuing to use the Service after the effective date of the updated Terms, you agree to the updated Terms."
         ]

@@ -81,7 +81,7 @@ export function ExportLunarReturnPDFDialog({
     const returnSubject = chartData.second_subject || chartData.subject
     const subjectName = sanitizeFilename(chartData.first_subject?.name || returnSubject.name)
     const returnDate = returnSubject.iso_formatted_utc_datetime?.split('T')[0] || new Date().toISOString().split('T')[0]
-    return `${subjectName}_lunar_return_${returnDate}.pdf`
+    return `${subjectName}_lunar-return_${returnDate}.pdf`
   }, [chartData.first_subject, chartData.second_subject, chartData.subject])
 
   const renderPDF = useCallback(

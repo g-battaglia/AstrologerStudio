@@ -28,7 +28,7 @@ interface NatalChartProps {
   savedChartId?: string
   notes?: string
   onNotesChange?: (notes: string) => void
-  /** Override chart type for AI interpretation (e.g., 'solar_return', 'lunar_return') */
+  /** Override chart type for AI interpretation (e.g., 'solar-return', 'lunar-return') */
   chartTypeOverride?: string
   dateLabel?: string
   /** If true, shows a warning that chart data has changed since AI was generated */

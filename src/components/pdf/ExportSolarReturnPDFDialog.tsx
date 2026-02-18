@@ -81,7 +81,7 @@ export function ExportSolarReturnPDFDialog({
     const returnSubject = chartData.second_subject || chartData.subject
     const subjectName = sanitizeFilename(chartData.first_subject?.name || returnSubject.name)
     const returnYear = returnSubject.year || new Date().getFullYear()
-    return `${subjectName}_solar_return_${returnYear}.pdf`
+    return `${subjectName}_solar-return_${returnYear}.pdf`
   }, [chartData.first_subject, chartData.second_subject, chartData.subject])
 
   const renderPDF = useCallback(

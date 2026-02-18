@@ -487,7 +487,7 @@ export function getRelevantAspects(
  * @returns Normalized chart type
  */
 export function normalizeChartType(chartType: string): ChartTypeNormalized {
-  const normalized = chartType.toLowerCase().replace(/_/g, ' ')
+  const normalized = chartType.toLowerCase().replace(/[-_]/g, ' ')
 
   if (normalized.includes('natal')) return 'natal'
   if (normalized.includes('transit')) return 'transit'

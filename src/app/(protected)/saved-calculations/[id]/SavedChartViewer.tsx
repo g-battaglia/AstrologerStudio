@@ -27,6 +27,7 @@ import { useChartPreferences } from '@/hooks/useChartPreferences'
 import { formatDisplayDate, formatDisplayTime } from '@/lib/utils/date'
 import { toast } from 'sonner'
 import { clientLogger } from '@/lib/logging/client'
+import { getSubChartData } from '@/lib/chart/helpers'
 
 interface SavedChartViewerProps {
   chartName: string
@@ -301,9 +302,12 @@ export function SavedChartViewer({ chartName, chartParams, savedChartId, initial
             <SynastryChart
               data={result.data}
               subject1Data={result.subject1Data}
-              subject2Data={result.data}
+              subject2Data={getSubChartData(
+                result.data.chart_data.second_subject!,
+                result.data.chart_data.active_points,
+              )}
               savedChartId={savedChartId}
-              chartTypeOverride="solar_return"
+              chartTypeOverride="solar-return"
               subject2DateLabel="Solar Return Date and Time"
               notes={notes}
               onNotesChange={setNotes}
@@ -314,7 +318,7 @@ export function SavedChartViewer({ chartName, chartParams, savedChartId, initial
           <NatalChart
             data={result.data}
             subjectId="saved-chart"
-            chartTypeOverride="solar_return"
+            chartTypeOverride="solar-return"
             dateLabel="Solar Return Date and Time"
             savedChartId={savedChartId}
             notes={notes}
@@ -328,9 +332,12 @@ export function SavedChartViewer({ chartName, chartParams, savedChartId, initial
             <SynastryChart
               data={result.data}
               subject1Data={result.subject1Data}
-              subject2Data={result.data}
+              subject2Data={getSubChartData(
+                result.data.chart_data.second_subject!,
+                result.data.chart_data.active_points,
+              )}
               savedChartId={savedChartId}
-              chartTypeOverride="lunar_return"
+              chartTypeOverride="lunar-return"
               subject2DateLabel="Lunar Return Date and Time"
               notes={notes}
               onNotesChange={setNotes}
@@ -341,7 +348,7 @@ export function SavedChartViewer({ chartName, chartParams, savedChartId, initial
           <NatalChart
             data={result.data}
             subjectId="saved-chart"
-            chartTypeOverride="lunar_return"
+            chartTypeOverride="lunar-return"
             dateLabel="Lunar Return Date and Time"
             savedChartId={savedChartId}
             notes={notes}

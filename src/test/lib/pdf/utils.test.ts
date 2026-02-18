@@ -264,8 +264,8 @@ describe('generatePdfFilename', () => {
   })
 
   it('should handle various chart types', () => {
-    expect(generatePdfFilename('Test', 'solar_return', '2024-01-01')).toBe('Test_solar_return_2024-01-01.pdf')
-    expect(generatePdfFilename('Test', 'lunar_return', '2024-01-01')).toBe('Test_lunar_return_2024-01-01.pdf')
+    expect(generatePdfFilename('Test', 'solar-return', '2024-01-01')).toBe('Test_solar-return_2024-01-01.pdf')
+    expect(generatePdfFilename('Test', 'lunar-return', '2024-01-01')).toBe('Test_lunar-return_2024-01-01.pdf')
     expect(generatePdfFilename('Test', 'composite', '2024-01-01')).toBe('Test_composite_2024-01-01.pdf')
   })
 

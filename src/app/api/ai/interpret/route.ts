@@ -18,7 +18,7 @@
  * ```typescript
  * {
  *   chartData: ChartData,           // Chart calculation data (subject, aspects, points)
- *   chartType: string,              // 'natal' | 'synastry' | 'transit' | 'composite' | 'solar_return' | 'lunar_return'
+ *   chartType: string,              // 'natal' | 'synastry' | 'transit' | 'composite' | 'solar-return' | 'lunar-return'
  *   systemPrompt?: string,          // Custom AI system prompt (optional)
  *   chartTypePrompt: string,        // Chart-specific interpretation prompt
  *   language: string,               // Response language code
@@ -296,7 +296,7 @@ async function fetchAIContext(
         return response.context
       }
 
-      case 'solar_return': {
+      case 'solar-return': {
         // For dual wheel return charts, subject may be undefined - use first_subject instead
         const rawReturnSubject = (subject || first_subject) as RawSubjectData
         const normalizedSubject = normalizeSubject(rawReturnSubject)
@@ -313,7 +313,7 @@ async function fetchAIContext(
         return response.context
       }
 
-      case 'lunar_return': {
+      case 'lunar-return': {
         // For dual wheel return charts, subject may be undefined - use first_subject instead
         const rawReturnSubject = (subject || first_subject) as RawSubjectData
         const normalizedSubject = normalizeSubject(rawReturnSubject)
@@ -481,7 +481,7 @@ export async function POST(request: NextRequest) {
       const name2 = safeChartData.second_subject?.name
       if (name1) subjectNames.push(name1)
       if (name2) subjectNames.push(name2)
-    } else if (['solar_return', 'lunar_return'].includes(chartType)) {
+    } else if (['solar-return', 'lunar-return'].includes(chartType)) {
       const name = safeChartData.first_subject?.name || safeChartData.subject?.name
       if (name) subjectNames.push(name)
     } else if (safeChartData.subject?.name) {
