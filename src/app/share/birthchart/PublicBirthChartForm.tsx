@@ -112,12 +112,12 @@ export function PublicBirthChartForm({ open, onOpenChange, onSubmit }: PublicBir
           {/* Name Field */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium" htmlFor="public_name">
-              Name
+              Name, Nickname, or Initials
             </label>
             <input
               id="public_name"
               className="border rounded px-3 py-2 text-sm bg-background"
-              placeholder="e.g. Your Name"
+              placeholder="e.g. M.R. or Client A (privacy-friendly)"
               {...nameRegister}
               ref={(el) => {
                 nameRegister.ref(el)

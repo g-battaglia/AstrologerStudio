@@ -76,12 +76,12 @@ export function EditSubjectDialog({
           {/* Name Field */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium" htmlFor="edit_username">
-              Name
+              Name, Nickname, or Initials
             </label>
             <input
               id="edit_username"
               className="border rounded px-2 py-1 text-sm bg-background"
-              placeholder="e.g. Mario Rossi"
+              placeholder="e.g. M.R. or Client A (privacy-friendly)"
               {...nameRegister}
               ref={(el) => {
                 nameRegister.ref(el)
