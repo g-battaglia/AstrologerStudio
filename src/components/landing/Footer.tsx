@@ -70,6 +70,13 @@ export function Footer() {
               Cookies
             </Link>
             <Link
+              href="/legal?tab=dpa"
+              className="transition-colors hover:text-foreground"
+              data-umami-event="footer-dpa-click"
+            >
+              DPA
+            </Link>
+            <Link
               href="/legal?tab=refund"
               className="transition-colors hover:text-foreground"
               data-umami-event="footer-refund-click"

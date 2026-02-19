@@ -90,6 +90,11 @@ function LicenseContent() {
   return <LegalContentRender data={legalContent.license} />
 }
 
+// DPA Content
+function DpaContent() {
+  return <LegalContentRender data={legalContent.dpa} />
+}
+
 // Refund Content
 function RefundContent() {
   return <LegalContentRender data={legalContent.refund} />
@@ -102,6 +107,7 @@ const TAB_MAP: Record<string, string> = {
   cookies: 'cookies',
   accessibility: 'accessibility',
   license: 'license',
+  dpa: 'dpa',
   refund: 'refund',
 }
 
@@ -144,6 +150,12 @@ function LegalTabs() {
           License
         </TabsTrigger>
         <TabsTrigger
+          value="dpa"
+          className="gap-2 data-[state=active]:bg-card data-[state=active]:shadow-md dark:data-[state=active]:border dark:data-[state=active]:bg-background"
+        >
+          DPA
+        </TabsTrigger>
+        <TabsTrigger
           value="refund"
           className="gap-2 data-[state=active]:bg-card data-[state=active]:shadow-md dark:data-[state=active]:border dark:data-[state=active]:bg-background"
         >
@@ -165,6 +177,9 @@ function LegalTabs() {
       </TabsContent>
       <TabsContent value="license">
         <LicenseContent />
+      </TabsContent>
+      <TabsContent value="dpa">
+        <DpaContent />
       </TabsContent>
       <TabsContent value="refund">
         <RefundContent />

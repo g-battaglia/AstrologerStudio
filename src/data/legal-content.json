@@ -1,10 +1,10 @@
 {
   "privacy": {
     "title": "Privacy Policy",
-    "lastUpdated": "February 18, 2026",
+    "lastUpdated": "February 19, 2026",
     "intro": [
       "Welcome to Astrologer Studio. We respect your privacy and are committed to protecting your personal data.",
-      "This Privacy Policy explains how Astrologer Studio (\"we\", \"us\", \"our\") collects, uses, discloses, and protects information when you access or use our website, applications, and services (collectively, the \"Service\"). Where the EU General Data Protection Regulation (GDPR) applies, we act as the data controller for the processing described in this Policy."
+      "This Privacy Policy explains how Astrologer Studio (\"we\", \"us\", \"our\") collects, uses, discloses, and protects information when you access or use our website, applications, and services (collectively, the \"Service\"). Where the EU General Data Protection Regulation (GDPR) applies, we act as the Data Controller for your account, billing, and usage information. However, for any personal data relating to other individuals (such as clients or subjects) that you input into the Service to generate astrological charts, you act as the Data Controller and we act solely as your Data Processor."
     ],
     "sections": [
       {
@@ -179,7 +179,7 @@
           },
           {
             "label": "AI Interpretation Cache",
-            "text": "Cached AI-generated interpretations are automatically purged after 24 hours or when the cache is invalidated, whichever comes first."
+            "text": "AI-generated interpretations are cached server-side to improve performance. Cached entries are considered stale after 24 hours and are not served beyond that period; stale entries are periodically purged during maintenance. Your browser may also cache interpretations locally for up to 7 days. You can clear local caches at any time from your account settings. All cached interpretations, both server-side and client-side, are permanently deleted when your account is deleted."
           },
           {
             "label": "Billing and Transaction Records",
@@ -238,6 +238,10 @@
           {
             "label": "Lodge a Complaint",
             "text": "If you are in the EEA/UK, you have the right to lodge a complaint with your local data protection supervisory authority."
+          },
+          {
+            "label": "Rights of Third-Party Data Subjects",
+            "text": "If you believe that an Astrologer Studio user has entered your personal data (such as your birth details) into our Service without your consent, please contact us at admin@astrologerstudio.com. Because our user is the Data Controller of this information, we will notify them of your request and assist in fulfilling your right to erasure by removing your data from our systems."
           }
         ]
       },
@@ -267,7 +271,7 @@
   },
   "terms": {
     "title": "Terms of Service",
-    "lastUpdated": "February 18, 2026",
+    "lastUpdated": "February 19, 2026",
     "intro": [
       "Please read these Terms of Service (\"Terms\") carefully before using Astrologer Studio (the \"Service\"). By accessing or using the Service, you agree to be bound by these Terms.",
       "If you do not agree to these Terms, do not use the Service. If you use the Service on behalf of a company or other entity, you represent that you have authority to bind that entity to these Terms."
@@ -278,7 +282,7 @@
         "content": [
           "You must be at least 16 years old to use the Service in the European Economic Area and the United Kingdom, and at least the minimum age required by applicable law elsewhere. If you are under the applicable age of majority, you may use the Service only with permission of a parent or legal guardian.",
           "You must provide accurate and complete information when creating an account and keep your account information up to date. You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account.",
-          "By creating an account, you agree that we may send you newsletters, marketing or promotional materials, and other information offering products or services. You may opt out of receiving any, or all, of these communications from us by following the unsubscribe link or instructions provided in any email we send."
+          "We may send you service-related communications necessary for the operation of your account (such as security alerts, billing notices, and policy updates). With your separate consent where required by applicable law, we may also send you newsletters, marketing, or promotional materials. You can withdraw marketing consent at any time using the unsubscribe link in any such email or through your account settings."
         ]
       },
       {
@@ -317,7 +321,7 @@
         "title": "4. Your Content and Client Data",
         "content": [
           "You may enter, upload, or store content such as birth details, notes, and saved charts (\"User Content\"). You retain your rights to your User Content.",
-          "If you input personal data relating to other individuals (for example, clients), you represent and warrant that you have provided all required notices and obtained any necessary consents or other lawful basis to share that data with us for processing in the Service."
+          "If you input personal data relating to other individuals (for example, clients), you represent and warrant that you have provided all required notices and obtained any necessary consents or other lawful basis to share that data with us for processing in the Service. The processing of such third-party personal data is governed by our Data Processing Agreement (DPA), which is incorporated by reference into these Terms."
         ]
       },
       {
@@ -589,6 +593,150 @@
     ],
     "contact": {
       "text": "For licensing inquiries or support:",
+      "email": "admin@astrologerstudio.com"
+    }
+  },
+  "dpa": {
+    "title": "Data Processing Agreement (DPA)",
+    "lastUpdated": "February 19, 2026",
+    "intro": [
+      "This Data Processing Agreement (\"DPA\") forms part of the Terms of Service between Astrologer Studio (\"Processor\", \"we\", \"us\") and you (\"Controller\", \"you\"), and governs our processing of personal data relating to third parties (such as your clients or subjects) that you input into the Service to generate astrological charts.",
+      "This DPA is entered into pursuant to Article 28 of the EU General Data Protection Regulation (GDPR) and equivalent provisions under UK GDPR. It applies only to personal data for which you are the Data Controller and we act as your Data Processor. For personal data relating to your own account (such as your email, credentials, and billing information), we act as the Data Controller and our Privacy Policy applies directly."
+    ],
+    "sections": [
+      {
+        "title": "1. Definitions",
+        "content": [
+          "\"Personal Data\", \"Data Controller\", \"Data Processor\", \"Data Subject\", \"Processing\", \"Sub-Processor\", and \"Supervisory Authority\" have the meanings given to them in the GDPR (or equivalent terms under applicable data protection law). \"Client Data\" means Personal Data relating to third-party individuals (such as your clients or subjects) that you input into the Service."
+        ]
+      },
+      {
+        "title": "2. Scope and Purpose of Processing",
+        "content": [
+          "You, the Controller, determine the purposes and means of processing Client Data. We process Client Data solely on your documented instructions and only to the extent necessary to provide the Service to you.",
+          "The subject matter and purpose of processing is the generation of astrological charts, transit calculations, synastry analyses, and related outputs based on the birth data you provide. Processing includes storage, retrieval, computation, display, caching, export, and deletion of Client Data within the Service."
+        ],
+        "list": [
+          {
+            "label": "Categories of Data Subjects",
+            "text": "Individuals whose birth data you enter into the Service (for example, your astrological clients, family members, or other subjects)."
+          },
+          {
+            "label": "Types of Personal Data",
+            "text": "Name or identifier (as provided by you, which may be a real name, nickname, or initials), date of birth, time of birth, place of birth (city, country, coordinates), and timezone. Astrological chart outputs derived from this data."
+          },
+          {
+            "label": "Duration of Processing",
+            "text": "Processing continues for as long as your account is active and Client Data is stored in the Service. Upon account deletion or upon your request, Client Data is permanently deleted in accordance with Section 9 of this DPA."
+          }
+        ]
+      },
+      {
+        "title": "3. Controller Obligations",
+        "content": [
+          "You represent and warrant that you have a lawful basis to process the Client Data and to instruct us to process it on your behalf. You are responsible for providing any required notices to, and obtaining any necessary consents from, the individuals whose data you input into the Service.",
+          "You are responsible for the accuracy, quality, and legality of the Client Data you provide. You agree not to input special categories of personal data (as defined in GDPR Article 9) into the Service unless explicitly supported and permitted."
+        ]
+      },
+      {
+        "title": "4. Processor Obligations",
+        "content": [
+          "We will process Client Data only on your documented instructions, including with regard to transfers of personal data to a third country, unless required to do so by applicable law, in which case we will inform you of that legal requirement before processing (unless prohibited by law).",
+          "We ensure that persons authorized to process Client Data have committed themselves to confidentiality or are under an appropriate statutory obligation of confidentiality.",
+          "We implement appropriate technical and organizational measures to ensure a level of security appropriate to the risk, as described in Section 6 of this DPA.",
+          "We will assist you, insofar as this is possible and by appropriate technical and organizational measures, in fulfilling your obligation to respond to requests from data subjects exercising their rights under applicable data protection law.",
+          "We will assist you in ensuring compliance with your obligations regarding security, breach notification, data protection impact assessments, and prior consultations with supervisory authorities, taking into account the nature of processing and the information available to us."
+        ]
+      },
+      {
+        "title": "5. Sub-Processors",
+        "content": [
+          "You provide general authorization for us to engage sub-processors to assist in providing the Service. The current list of sub-processors is set out in Section 4a of our Privacy Policy.",
+          "We will inform you of any intended addition or replacement of sub-processors, giving you a reasonable opportunity to object. If you object on reasonable data protection grounds and we cannot accommodate your objection, either party may terminate the affected part of the Service.",
+          "We impose data protection obligations on each sub-processor by way of a contract that provides at least the same level of protection as this DPA. We remain liable for the acts and omissions of our sub-processors."
+        ]
+      },
+      {
+        "title": "6. Security Measures",
+        "content": [
+          "We implement and maintain technical and organizational measures designed to protect Client Data against unauthorized or unlawful processing and against accidental loss, destruction, or damage. These measures include, as applicable:"
+        ],
+        "list": [
+          {
+            "text": "Encryption of data in transit (TLS/HTTPS for all connections)."
+          },
+          {
+            "text": "Encryption of database backups."
+          },
+          {
+            "text": "Access controls and authentication (role-based access, strong password requirements)."
+          },
+          {
+            "text": "Logical separation of customer data (each user's data is isolated by user ID)."
+          },
+          {
+            "text": "Regular security monitoring, logging, and intrusion detection."
+          },
+          {
+            "text": "Least-privilege access for personnel and systems."
+          },
+          {
+            "text": "Periodic review and improvement of security practices."
+          }
+        ]
+      },
+      {
+        "title": "7. Data Breach Notification",
+        "content": [
+          "In the event of a personal data breach affecting Client Data, we will notify you without undue delay after becoming aware of the breach. The notification will include, to the extent available, the nature of the breach, the categories and approximate number of data subjects affected, the likely consequences, and the measures taken or proposed to mitigate the breach.",
+          "We will cooperate with you and take reasonable steps to assist in the investigation, mitigation, and remediation of any such breach."
+        ]
+      },
+      {
+        "title": "8. International Data Transfers",
+        "content": [
+          "Client Data may be processed in the EEA and in other jurisdictions where our infrastructure or sub-processors operate. Where Client Data is transferred to a country outside the EEA/UK that does not benefit from an adequacy decision, we rely on appropriate safeguards such as Standard Contractual Clauses (SCCs) approved by the European Commission, and any additional measures necessary to ensure an adequate level of protection."
+        ]
+      },
+      {
+        "title": "9. Deletion and Return of Data",
+        "content": [
+          "You may delete individual subjects and charts at any time through the Service interface. Upon deletion, the data is permanently removed from our production databases.",
+          "Upon termination of your account or upon your written request, we will delete all Client Data from our production systems within 30 days. Client Data in encrypted backups will be purged within the backup rotation cycle (up to 30 days). We may retain data to the extent required by applicable law (for example, billing records), but such retained data will be limited to what is legally required and will not be used for any other purpose.",
+          "Upon your request, and where technically feasible, we will provide you with a copy of your Client Data in a structured, commonly used, machine-readable format before deletion."
+        ]
+      },
+      {
+        "title": "10. Audits and Inspections",
+        "content": [
+          "We will make available to you, on reasonable request, information necessary to demonstrate compliance with this DPA and applicable data protection law.",
+          "You (or a mandated, independent auditor subject to confidentiality obligations) may conduct audits or inspections, no more than once per calendar year and upon reasonable advance written notice, to verify our compliance with this DPA. Audits shall be conducted during normal business hours and in a manner that minimizes disruption to our operations. You shall bear the costs of any such audit unless the audit reveals a material breach of this DPA by us."
+        ]
+      },
+      {
+        "title": "11. Data Subject Rights Requests",
+        "content": [
+          "Because you are the Controller of Client Data, data subjects should direct their rights requests (access, rectification, erasure, restriction, portability, objection) to you in the first instance.",
+          "If we receive a request from a data subject directly regarding Client Data, we will promptly redirect the data subject to you and notify you of the request, unless prohibited by law. We will not respond to such requests directly unless instructed by you or required by applicable law.",
+          "We will provide you with reasonable technical assistance to fulfill data subject requests to the extent they relate to Client Data processed within the Service."
+        ]
+      },
+      {
+        "title": "12. Term and Termination",
+        "content": [
+          "This DPA takes effect when you first input Client Data into the Service and remains in effect for as long as we process Client Data on your behalf. The obligations regarding confidentiality, data deletion, and cooperation survive termination.",
+          "This DPA automatically terminates upon deletion of your account and completion of the data deletion processes described in Section 9."
+        ]
+      },
+      {
+        "title": "13. Governing Law",
+        "content": [
+          "This DPA is governed by the same law that governs the Terms of Service. Where the GDPR applies, this DPA shall be interpreted in accordance with the GDPR regardless of the governing law of the Terms."
+        ]
+      }
+    ],
+    "contact": {
+      "text": "For questions about this DPA or to exercise your rights as a Controller, contact us at:",
       "email": "admin@astrologerstudio.com"
     }
   },

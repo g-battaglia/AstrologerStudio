@@ -8,10 +8,10 @@
  */
 export const LEGAL_VERSIONS = {
   /** Current Terms of Service version */
-  terms: '2026-02-18',
+  terms: '2026-02-19',
 
   /** Current Privacy Policy version */
-  privacy: '2026-02-18',
+  privacy: '2026-02-19',
 } as const
 
 export type LegalVersions = typeof LEGAL_VERSIONS
