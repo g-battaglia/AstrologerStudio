@@ -73,6 +73,13 @@ const openrouter = createOpenAI({
 })
 
 import { omitKeys } from '@/lib/utils/object'
+import {
+  createNameMappings,
+  anonymizeText,
+  deanonymizeText,
+  createDeanonymizingStream,
+  type NameMapping,
+} from '@/lib/ai/name-anonymizer'
 
 /**
  * Generates a SHA-256 hash from a data object.
@@ -490,12 +497,24 @@ export async function POST(request: NextRequest) {
 
     const aiContext = await fetchAIContext(safeChartData, chartType, include_house_comparison)
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // NAME ANONYMIZATION (Privacy: never send real names to the LLM)
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1. Create a bi-directional mapping: real name ↔ placeholder
+    // 2. Replace real names in the AI context (returned by Astrologer API)
+    // 3. Pass placeholders as "subject names" to the prompt builder
+    // The streaming response is de-anonymized before reaching the client.
+
+    const nameMappings: NameMapping[] = createNameMappings(subjectNames)
+    const anonymizedContext = anonymizeText(aiContext, nameMappings)
+    const anonymizedNames = nameMappings.map((m) => m.placeholder)
+
     const userPrompt = buildAIInterpretationUserPrompt({
       chartTypePrompt,
-      aiContext,
+      aiContext: anonymizedContext,
       language,
       relationshipType,
-      subjectNames,
+      subjectNames: anonymizedNames,
     })
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -556,12 +575,14 @@ export async function POST(request: NextRequest) {
 
       /**
        * Callback executed when streaming completes.
-       * Saves the generated interpretation to cache for future requests.
+       * De-anonymizes placeholder tokens back to real names before caching,
+       * so cached entries always contain the final user-facing text.
        */
       onFinish: async ({ text }) => {
         try {
+          const finalText = deanonymizeText(text, nameMappings)
           // Save to cache if enabled and response is substantial (>50 chars)
-          if (AI_CACHE_ENABLED && text && text.length > 50) {
+          if (AI_CACHE_ENABLED && finalText && finalText.length > 50) {
             await prisma.cachedInterpretation.upsert({
               where: {
                 hash_userId: {
@@ -569,8 +590,8 @@ export async function POST(request: NextRequest) {
                   userId: session.userId,
                 },
               },
-              update: { content: text },
-              create: { hash, userId: session.userId, content: text },
+              update: { content: finalText },
+              create: { hash, userId: session.userId, content: finalText },
             })
             logger.debug(`[CACHE] Saved interpretation`)
           }
@@ -580,20 +601,29 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Create streaming response with debug headers
-    const streamResponse = result.toTextStreamResponse()
+    // ─────────────────────────────────────────────────────────────────────────
+    // DE-ANONYMIZE STREAMING RESPONSE
+    // ─────────────────────────────────────────────────────────────────────────
+    // The AI returns text with placeholder tokens (e.g. "__SUBJECT_1__").
+    // Pipe the text stream through a TransformStream that replaces them
+    // with real names before the chunks reach the client.
+
+    const deanonymizingTransform = createDeanonymizingStream(nameMappings)
+    const deanonymizedStream = result.textStream
+      .pipeThrough(deanonymizingTransform)
+      .pipeThrough(new TextEncoderStream())
 
     // Add debug headers with base64-encoded context (to handle newlines)
-    // These headers allow the frontend to display what was sent to the AI
-    const headers = new Headers(streamResponse.headers)
-    headers.set('X-AI-Context', Buffer.from(aiContext).toString('base64'))
+    // These headers show the *anonymized* prompt — useful for verifying privacy
+    const headers = new Headers()
+    headers.set('Content-Type', 'text/plain; charset=utf-8')
+    headers.set('X-AI-Context', Buffer.from(anonymizedContext).toString('base64'))
     headers.set('X-AI-User-Prompt', Buffer.from(userPrompt).toString('base64'))
     // Streaming AI responses should never be cached
     headers.set('Cache-Control', CACHE_CONTROL.noStore)
 
-    return new Response(streamResponse.body, {
-      status: streamResponse.status,
-      statusText: streamResponse.statusText,
+    return new Response(deanonymizedStream, {
+      status: 200,
       headers,
     })
   } catch (error) {
